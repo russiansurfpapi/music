@@ -1,0 +1,21 @@
+# Core dependencies
+python-dotenv==1.0.0
+requests==2.31.0
+spotipy==2.23.0
+
+# Web framework (optional - uncomment if needed)
+# flask==2.3.3
+# fastapi==0.104.1
+# uvicorn==0.24.0
+
+# Database (optional - uncomment if needed)
+# sqlalchemy==2.0.23
+# psycopg2-binary==2.9.9
+
+# Music processing libraries
+mutagen==1.47.0
+pydub==0.25.1
+
+# Utilities
+click==8.1.7
+rich==13.7.0 
