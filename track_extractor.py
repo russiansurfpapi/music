@@ -1,3 +1,5 @@
+
+
 # import os
 # import re
 # import csv
@@ -12,7 +14,18 @@
 #     soup = BeautifulSoup(html_content, "html.parser")
 #     tracks = []
 
-#     # Try 1001Tracklists format
+#     # Try 1001Tracklists format - look for trackValue elements
+#     track_elements = soup.select(".trackValue")
+#     if track_elements:
+#         for element in track_elements:
+#             text = element.get_text(strip=True)
+#             if " - " in text:
+#                 artist, title = text.split(" - ", 1)
+#                 tracks.append((title.strip(), artist.strip(), source_file))
+#         if tracks:
+#             return tracks
+
+#     # Fallback: try the original .trackFormat__text method
 #     tl_rows = soup.select(".trackFormat__text")
 #     if tl_rows:
 #         for row in tl_rows:
@@ -20,7 +33,8 @@
 #             if " - " in text:
 #                 artist, title = text.split(" - ", 1)
 #                 tracks.append((title.strip(), artist.strip(), source_file))
-#         return tracks
+#         if tracks:
+#             return tracks
 
 #     # Try Beatport-style format with metadata in <meta> tags
 #     tl_divs = soup.select("div[itemtype='http://schema.org/MusicRecording']")
@@ -43,6 +57,18 @@
 
 #     return tracks
 
+# def clean_redundant_artist_from_title(tracks: List[Tuple[str, str, str]]) -> List[Tuple[str, str, str]]:
+#     """
+#     Remove artist name from beginning of title if duplicated, e.g.:
+#     title = "DJ Boring - N15", artist = "DJ Boring" → title = "N15"
+#     """
+#     cleaned_tracks = []
+#     for title, artist, source_file in tracks:
+#         pattern = re.compile(rf"^{re.escape(artist)}\s*[-:|]\s*", re.IGNORECASE)
+#         cleaned_title = re.sub(pattern, "", title).strip()
+#         cleaned_tracks.append((cleaned_title, artist, source_file))
+#     return cleaned_tracks
+
 # def extract_tracks_from_path(input_path: Union[str, os.PathLike], output_csv_path: str):
 #     """
 #     Process a single HTML file or a folder of HTML files and save (title, artist, source_file) tuples to CSV.
@@ -61,6 +87,9 @@
 #             tracks = extract_tracks_from_html(html, os.path.basename(input_path))
 #             all_tracks.extend(tracks)
 
+#     # Clean titles before saving
+#     all_tracks = clean_redundant_artist_from_title(all_tracks)
+
 #     with open(output_csv_path, "w", newline="", encoding="utf-8") as f:
 #         writer = csv.writer(f)
 #         writer.writerow(["title", "artist", "source_file"])
@@ -78,21 +107,32 @@
 
 #     extract_tracks_from_path(args.input, args.output)
 
+
 import os
 import re
 import csv
 from bs4 import BeautifulSoup
 from typing import List, Tuple, Union
 
+DEFAULT_INPUT_DIR = "sets"
+DEFAULT_OUTPUT_CSV = "tracks_output.csv"
+
 def extract_tracks_from_html(html_content: str, source_file: str) -> List[Tuple[str, str, str]]:
-    """
-    Extracts (title, artist, source_file) tuples from the provided HTML content.
-    This version handles both 1001Tracklists and Beatport-style HTML formats.
-    """
     soup = BeautifulSoup(html_content, "html.parser")
     tracks = []
 
     # Try 1001Tracklists format
+    track_elements = soup.select(".trackValue")
+    if track_elements:
+        for element in track_elements:
+            text = element.get_text(strip=True)
+            if " - " in text:
+                artist, title = text.split(" - ", 1)
+                tracks.append((title.strip(), artist.strip(), source_file))
+        if tracks:
+            return tracks
+
+    # Fallback: original trackFormat__text format
     tl_rows = soup.select(".trackFormat__text")
     if tl_rows:
         for row in tl_rows:
@@ -100,9 +140,10 @@ def extract_tracks_from_html(html_content: str, source_file: str) -> List[Tuple[
             if " - " in text:
                 artist, title = text.split(" - ", 1)
                 tracks.append((title.strip(), artist.strip(), source_file))
-        return tracks
+        if tracks:
+            return tracks
 
-    # Try Beatport-style format with metadata in <meta> tags
+    # Beatport-style metadata
     tl_divs = soup.select("div[itemtype='http://schema.org/MusicRecording']")
     for div in tl_divs:
         title = div.find("meta", {"itemprop": "name"})
@@ -113,21 +154,17 @@ def extract_tracks_from_html(html_content: str, source_file: str) -> List[Tuple[
             if title_text and artist_text:
                 tracks.append((title_text, artist_text, source_file))
 
-    # Fallback: try parsing visible text blocks with " - "
+    # Crude fallback
     all_text = soup.get_text("\n", strip=True)
     for line in all_text.splitlines():
         if " - " in line and len(line.split(" - ")) == 2:
             artist, title = line.split(" - ", 1)
-            if 2 < len(title.strip()) < 150:  # crude filter
+            if 2 < len(title.strip()) < 150:
                 tracks.append((title.strip(), artist.strip(), source_file))
 
     return tracks
 
 def clean_redundant_artist_from_title(tracks: List[Tuple[str, str, str]]) -> List[Tuple[str, str, str]]:
-    """
-    Remove artist name from beginning of title if duplicated, e.g.:
-    title = "DJ Boring - N15", artist = "DJ Boring" → title = "N15"
-    """
     cleaned_tracks = []
     for title, artist, source_file in tracks:
         pattern = re.compile(rf"^{re.escape(artist)}\s*[-:|]\s*", re.IGNORECASE)
@@ -136,9 +173,6 @@ def clean_redundant_artist_from_title(tracks: List[Tuple[str, str, str]]) -> Lis
     return cleaned_tracks
 
 def extract_tracks_from_path(input_path: Union[str, os.PathLike], output_csv_path: str):
-    """
-    Process a single HTML file or a folder of HTML files and save (title, artist, source_file) tuples to CSV.
-    """
     all_tracks = []
     if os.path.isdir(input_path):
         for file in os.listdir(input_path):
@@ -153,7 +187,6 @@ def extract_tracks_from_path(input_path: Union[str, os.PathLike], output_csv_pat
             tracks = extract_tracks_from_html(html, os.path.basename(input_path))
             all_tracks.extend(tracks)
 
-    # Clean titles before saving
     all_tracks = clean_redundant_artist_from_title(all_tracks)
 
     with open(output_csv_path, "w", newline="", encoding="utf-8") as f:
@@ -167,9 +200,8 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input", required=True, help="Path to HTML file or folder of HTML files")
-    parser.add_argument("--output", default="tracks_output.csv", help="Output CSV file path")
+    parser.add_argument("--input", default=DEFAULT_INPUT_DIR, help="Path to HTML file or folder of HTML files (default: sets/)")
+    parser.add_argument("--output", default=DEFAULT_OUTPUT_CSV, help="Output CSV file path (default: tracks_output.csv)")
     args = parser.parse_args()
 
     extract_tracks_from_path(args.input, args.output)
-
