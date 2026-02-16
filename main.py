@@ -232,7 +232,9 @@
 #     main(artist_input, playlist_name)
 
 import os
+import re
 import sys
+import unicodedata
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from dotenv import load_dotenv
@@ -257,22 +259,67 @@ sp = spotipy.Spotify(
 )
 
 
+def normalize_name(name):
+    """Strip accents, lowercase, remove parenthetical suffixes like (BR)."""
+    name = name.strip().lower()
+    name = unicodedata.normalize('NFD', name)
+    name = ''.join(c for c in name if unicodedata.category(c) != 'Mn')
+    name = re.sub(r'\s*\(.*?\)\s*$', '', name)
+    return name.strip()
+
+
 def artist_chooser(search_term, candidates):
     """
-    Simple artist chooser - returns the most popular artist from candidates.
-    You can replace this with your own logic if you have a separate artist_chooser module.
+    Artist chooser - prefers name similarity over raw popularity.
+    1. Exact match (case-insensitive)
+    2. Normalized match (accent-stripped)
+    3. Name starts with / contains search term
+    4. Fall back to most popular only if no name match
     """
     if not candidates:
         return None
-    
-    # Sort by popularity and return the most popular
+
+    search_lower = search_term.strip().lower()
+    search_normalized = normalize_name(search_term)
+
+    # 1. Exact match (case-insensitive)
+    for artist in candidates:
+        if artist['name'].strip().lower() == search_lower:
+            print(f"🎤 Found exact match: {artist['name']}")
+            return artist
+
+    # 2. Normalized match (strips accents, removes parentheticals)
+    for artist in candidates:
+        if normalize_name(artist['name']) == search_normalized:
+            print(f"🎤 Found normalized match: {artist['name']}")
+            return artist
+
+    # 3. Score by name similarity, with a small popularity tiebreaker
+    scored = []
+    for artist in candidates:
+        a_norm = normalize_name(artist['name'])
+        if a_norm.startswith(search_normalized) or search_normalized.startswith(a_norm):
+            score = 500
+        elif search_normalized in a_norm or a_norm in search_normalized:
+            score = 300
+        else:
+            score = 0
+        # Small popularity tiebreaker (0-10 range) so name match always wins
+        score += artist.get('popularity', 0) * 0.1
+        scored.append((score, artist))
+
+    scored.sort(key=lambda x: x[0], reverse=True)
+
+    if scored[0][0] >= 100:
+        chosen = scored[0][1]
+        print(f"🎤 Best name match: {chosen['name']} (popularity: {chosen.get('popularity', 0)})")
+        return chosen
+
+    # 4. No name match at all — fall back to most popular
     sorted_candidates = sorted(candidates, key=lambda x: x.get('popularity', 0), reverse=True)
-    
-    print(f"🎤 Found {len(candidates)} artists matching '{search_term}':")
-    for i, artist in enumerate(sorted_candidates[:3]):  # Show top 3
+    print(f"🎤 No close name match for '{search_term}', using most popular:")
+    for i, artist in enumerate(sorted_candidates[:3]):
         print(f"   {i+1}. {artist['name']} (popularity: {artist.get('popularity', 0)})")
-    
-    # Return the most popular one
     chosen = sorted_candidates[0]
     print(f"   ✓ Selected: {chosen['name']}")
     return chosen
@@ -280,7 +327,7 @@ def artist_chooser(search_term, candidates):
 
 def get_artist_id(artist_name):
     try:
-        results = sp.search(q=artist_name, type="artist", limit=5)
+        results = sp.search(q=artist_name, type="artist", limit=10)
         candidates = results["artists"]["items"]
         if not candidates:
             return None
@@ -326,108 +373,61 @@ def get_recent_releases(artist_id, limit=5):
         return []
 
 
-def get_most_popular_album_tracks_relaxed(artist_id, min_tracks=1):
-    """
-    Fallback function with relaxed filtering rules.
-    """
+def get_top_albums_tracks(artist_id, num_albums=2, min_tracks=2):
+    """Get tracks from the top N most popular albums for an artist."""
     try:
-        albums = sp.artist_albums(artist_id, album_type="album,compilation", limit=20)
-        
-        if not albums["items"]:
-            return [], None
-        
-        # Just get tracks from the first available album
-        for album in albums["items"]:
-            try:
-                track_items = sp.album_tracks(album["id"])["items"]
-                if len(track_items) >= min_tracks:
-                    track_ids = [t["id"] for t in track_items if t.get("id")]
-                    print(f"🎧 Using album: {album['name']} (relaxed rules)")
-                    return track_ids, album["name"]
-            except Exception as e:
+        albums_response = sp.artist_albums(artist_id, album_type="album", limit=50)
+        seen_names = set()
+        candidate_ids = []
+
+        for album in albums_response["items"]:
+            name_lower = album["name"].strip().lower()
+            if name_lower in seen_names:
                 continue
-                
-        return [], None
-    except Exception as e:
-        print(f"⚠️ Failed in relaxed album search: {e}")
-        return [], None
-
-
-def get_most_popular_album_tracks(artist_id, min_tracks=2):
-    try:
-        albums = sp.artist_albums(artist_id, album_type="album", limit=50)
-        album_stats = []
-        seen_album_names = set()
-
-        print(f"🗂️ Found {len(albums['items'])} albums for artist")
-
-        for album in albums["items"]:
-            album_name = album["name"].strip().lower()
-            if album_name in seen_album_names:
+            if any(kw in name_lower for kw in ["remix", "edit", "rework", "remastered"]):
                 continue
-            seen_album_names.add(album_name)
+            seen_names.add(name_lower)
+            candidate_ids.append(album["id"])
 
-            # Skip remix/alternate albums
-            if any(keyword in album_name for keyword in ["remix", "edit", "rework", "version", "remastered"]):
-                print(f"🚫 Skipping remix/alternate album '{album['name']}'")
-                continue
+        if not candidate_ids:
+            # Fallback: try compilations too
+            albums_response = sp.artist_albums(artist_id, album_type="album,compilation", limit=20)
+            candidate_ids = [a["id"] for a in albums_response["items"][:10]]
 
-            try:
-                album_full = sp.album(album["id"])
-                track_items = sp.album_tracks(album["id"])["items"]
-            except Exception as e:
-                print(f"⚠️ Error loading album '{album['name']}': {e}")
-                continue
+        if not candidate_ids:
+            return [], []
 
+        # Batch fetch full album details (up to 20 at a time) — way faster than per-track
+        full_albums = []
+        for i in range(0, len(candidate_ids), 20):
+            batch = candidate_ids[i:i + 20]
+            result = sp.albums(batch)
+            full_albums.extend([a for a in result["albums"] if a])
+
+        # Sort by popularity (album-level score from Spotify)
+        full_albums.sort(key=lambda a: a.get("popularity", 0), reverse=True)
+
+        all_track_ids = []
+        album_names = []
+
+        for album in full_albums:
+            if len(album_names) >= num_albums:
+                break
+            track_items = album.get("tracks", {}).get("items", [])
             if len(track_items) < min_tracks:
-                print(f"🚫 Skipping album '{album['name']}' (only {len(track_items)} tracks)")
                 continue
 
-            track_ids = [t["id"] for t in track_items if t.get("id")]
-            
-            try:
-                track_pops = []
-                for tid in track_ids:
-                    try:
-                        track_data = sp.track(tid)
-                        if track_data and "popularity" in track_data:
-                            track_pops.append(track_data["popularity"])
-                    except Exception as e:
-                        print(f"⚠️ Could not get popularity for track ID {tid}: {e}")
-                
-                if not track_pops:
-                    continue
-                    
-                avg_popularity = sum(track_pops) / len(track_pops)
-            except Exception as e:
-                print(f"⚠️ Failed popularity calc for album '{album['name']}': {e}")
-                continue
+            ids = [t["id"] for t in track_items if t.get("id")]
+            all_track_ids.extend(ids)
+            album_names.append(album["name"])
 
-            album_stats.append((avg_popularity, album_full, track_items))
+            print(f"   📀 {album['name']} (popularity: {album.get('popularity', 0)}, {len(track_items)} tracks)")
 
-        if not album_stats:
-            print("❌ No eligible full-length albums found after filtering. Retrying with relaxed rules...")
-            return get_most_popular_album_tracks_relaxed(artist_id, min_tracks)
+        return all_track_ids, album_names
 
-        best_album_stat = max(album_stats, key=lambda x: x[0])
-        avg_pop, best_album, track_items = best_album_stat
-
-        print(f"\n🎧 Most popular album: **{best_album['name']}**")
-        print(
-            f"📅 Released: {best_album['release_date']} | 🧮 {len(track_items)} tracks | 🔥 Avg popularity: {avg_pop:.1f}"
-        )
-
-        track_ids = []
-        for t in track_items:
-            print(f"   - {t['track_number']}. {t['name']}")
-            if t.get("id"):
-                track_ids.append(t["id"])
-
-        return track_ids, best_album["name"]
-    
     except Exception as e:
-        print(f"⚠️ Failed to get most popular album tracks: {e}")
-        return get_most_popular_album_tracks_relaxed(artist_id, min_tracks)
+        print(f"⚠️ Failed to get top albums: {e}")
+        return [], []
 
 
 def get_or_create_playlist(user_id, playlist_name="Escuchar1"):
@@ -453,7 +453,7 @@ def get_or_create_playlist(user_id, playlist_name="Escuchar1"):
 
         # If not found, create one
         new_playlist = sp.user_playlist_create(
-            user=user_id, name=playlist_name, public=False
+            user=user_id, name=playlist_name, public=True
         )
         print(f"🆕 Created new playlist: {playlist_name}")
         return new_playlist["id"], new_playlist["external_urls"]["spotify"]
@@ -499,22 +499,20 @@ def add_tracks_to_playlist(playlist_id, new_track_ids):
         print(f"⚠️ Failed to add tracks to playlist: {e}")
 
 
-def main(artist_csv, playlist_name="Escuchar"):
+def main(artist_names, playlist_name="Escuchar"):
     try:
-        artist_names = [name.strip() for name in artist_csv.split(",") if name.strip()]
-        
         if not artist_names:
             print("❌ No artist names provided.")
             return
-        
+
         user_id = sp.current_user()["id"]
         playlist_id, playlist_url = get_or_create_playlist(
             user_id, playlist_name=playlist_name
         )
 
         total_added = 0
-        for artist_name in artist_names:
-            print(f"\n🔍 Processing artist: {artist_name}")
+        for i, artist_name in enumerate(artist_names, 1):
+            print(f"\n🔍 [{i}/{len(artist_names)}] Processing artist: {artist_name}")
             artist_id = get_artist_id(artist_name)
             if not artist_id:
                 print(f"❌ Artist '{artist_name}' not found.")
@@ -522,11 +520,11 @@ def main(artist_csv, playlist_name="Escuchar"):
 
             top_tracks = get_top_tracks(artist_id, limit=7)
             recent_tracks = get_recent_releases(artist_id, limit=5)
-            album_tracks, album_name = get_most_popular_album_tracks(artist_id)
+            album_tracks, album_names = get_top_albums_tracks(artist_id, num_albums=2)
 
             # Combine all tracks and remove duplicates while preserving order
             all_tracks = list(dict.fromkeys(top_tracks + recent_tracks + album_tracks))
-            
+
             # Filter out any None values
             all_tracks = [t for t in all_tracks if t]
 
@@ -538,14 +536,14 @@ def main(artist_csv, playlist_name="Escuchar"):
             total_added += len(all_tracks)
 
             print(
-                f"🎧 Added up to {len(all_tracks)} tracks from '{artist_name}' to your '{playlist_name}' playlist."
+                f"🎧 Added up to {len(all_tracks)} tracks from '{artist_name}' to '{playlist_name}'."
             )
-            if album_name:
-                print(f"   ↪ Most popular album: *{album_name}*")
+            if album_names:
+                print(f"   ↪ Top albums: {', '.join(album_names)}")
 
-        print(f"\n✨ Finished! Added tracks from {len(artist_names)} artist(s)")
+        print(f"\n✨ Finished! Processed {len(artist_names)} artist(s), ~{total_added} tracks")
         print(f"🔗 Final playlist link: {playlist_url}")
-        
+
     except Exception as e:
         print(f"❌ Critical error in main: {e}")
         sys.exit(1)
@@ -553,11 +551,20 @@ def main(artist_csv, playlist_name="Escuchar"):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python3 main.py 'Artist 1, Artist 2' [playlist_name]")
-        print("Example: python3 main.py 'Daft Punk, The Weeknd' 'My Awesome Mix'")
+        print("Usage:")
+        print("  python3 main.py artists.txt [playlist_name]       # from file (one artist per line)")
+        print("  python3 main.py 'Artist 1, Artist 2' [playlist_name]  # comma-separated")
         sys.exit(1)
 
     artist_input = sys.argv[1]
     playlist_name = sys.argv[2] if len(sys.argv) > 2 else "Escuchar"
-    
-    main(artist_input, playlist_name)
+
+    # Support file input (one artist per line) or comma-separated string
+    if os.path.isfile(artist_input):
+        with open(artist_input, "r") as f:
+            artist_names = [line.strip() for line in f if line.strip()]
+        print(f"📄 Loaded {len(artist_names)} artists from {artist_input}")
+    else:
+        artist_names = [name.strip() for name in artist_input.split(",") if name.strip()]
+
+    main(artist_names, playlist_name)
