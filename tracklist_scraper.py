@@ -542,6 +542,8 @@ def main():
     parser = argparse.ArgumentParser(description="1001Tracklists scraper with Bright Data CAPTCHA bypass")
     parser.add_argument("urls", nargs="*", help="1001Tracklists URLs to scrape")
     parser.add_argument("--artist", help="Search by artist name (comma-separated for multiple)")
+    parser.add_argument("--dj-url", help="Direct DJ page URL(s), comma-separated (e.g. https://www.1001tracklists.com/dj/enzosiragusa/index.html)")
+    parser.add_argument("--dj-local", help="Local DJ page HTML file (extract set URLs then fetch each set)")
     parser.add_argument("--sets", type=int, default=5, help="Max sets to scrape per artist (default: 5)")
     parser.add_argument("--local", help="Path to local HTML file or directory (skip fetching)")
     parser.add_argument("--playlist", help="Create a Spotify playlist with this name")
@@ -549,11 +551,58 @@ def main():
     parser.add_argument("--save-html", default="sets", help="Directory to save fetched HTML (default: sets/)")
     args = parser.parse_args()
 
-    if not args.urls and not args.local and not args.artist:
+    if not args.urls and not args.local and not args.artist and not args.dj_url and not args.dj_local:
         parser.print_help()
         sys.exit(1)
 
     all_tracks = []
+
+    # --- DJ local mode: read local DJ page HTML, extract set URLs, fetch & scrape them ---
+    if args.dj_local:
+        with open(args.dj_local, "r", encoding="utf-8") as f:
+            dj_html = f.read()
+        slug = os.path.basename(args.dj_local).replace(".html", "").replace("_files", "")
+        log.info(f"Using local DJ page: {args.dj_local} (slug: {slug})")
+        tracklist_urls = get_tracklist_urls_from_html(dj_html, slug, max_sets=args.sets)
+        if tracklist_urls:
+            for i, url in enumerate(tracklist_urls, 1):
+                log.info(f"\n[{slug}] Scraping set {i}/{len(tracklist_urls)}: {url}")
+                html, filepath = fetch_and_save(url, output_dir=args.save_html)
+                if html:
+                    source = os.path.basename(filepath) if filepath else url
+                    tracks = extract_tracks(html, source=source)
+                    all_tracks.extend(tracks)
+                    log.info(f"  Got {len(tracks)} tracks")
+                if i < len(tracklist_urls):
+                    time.sleep(2)
+        else:
+            log.warning(f"No sets found in local DJ page")
+
+    # --- DJ URL mode: fetch DJ page directly, extract set URLs, scrape them ---
+    if args.dj_url:
+        for dj_entry in args.dj_url.split(","):
+            dj_entry = dj_entry.strip()
+            # Derive artist name from URL slug: /dj/enzosiragusa/index.html -> enzosiragusa
+            slug = dj_entry.rstrip("/").split("/dj/")[-1].split("/")[0] if "/dj/" in dj_entry else "unknown"
+            log.info(f"Fetching DJ page: {dj_entry}")
+            dj_html = fetch_html(dj_entry)
+            if not dj_html:
+                log.error(f"  Failed to fetch DJ page: {dj_entry}")
+                continue
+            tracklist_urls = get_tracklist_urls_from_html(dj_html, slug, max_sets=args.sets)
+            if not tracklist_urls:
+                log.warning(f"  No sets found on DJ page: {dj_entry}")
+                continue
+            for i, url in enumerate(tracklist_urls, 1):
+                log.info(f"\n[{slug}] Scraping set {i}/{len(tracklist_urls)}: {url}")
+                html, filepath = fetch_and_save(url, output_dir=args.save_html)
+                if html:
+                    source = os.path.basename(filepath) if filepath else url
+                    tracks = extract_tracks(html, source=source)
+                    all_tracks.extend(tracks)
+                    log.info(f"  Got {len(tracks)} tracks")
+                if i < len(tracklist_urls):
+                    time.sleep(2)
 
     # --- Artist search mode: name -> search 1001TL -> DJ page -> sets -> tracks ---
     if args.artist:
