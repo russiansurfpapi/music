@@ -13,7 +13,7 @@
 # SPOTIPY_REDIRECT_URI = os.getenv(
 #     "SPOTIPY_REDIRECT_URI", "http://127.0.0.1:8888/callback"
 # )
-# SCOPE = "playlist-modify-public playlist-modify-private"
+# SCOPE = "playlist-modify-public playlist-modify-private playlist-read-private playlist-read-collaborative"
 
 # sp = spotipy.Spotify(
 #     auth_manager=SpotifyOAuth(
@@ -247,7 +247,7 @@ SPOTIPY_CLIENT_SECRET = os.getenv("SPOTIPY_CLIENT_SECRET")
 SPOTIPY_REDIRECT_URI = os.getenv(
     "SPOTIPY_REDIRECT_URI", "http://127.0.0.1:8888/callback"
 )
-SCOPE = "playlist-modify-public playlist-modify-private"
+SCOPE = "playlist-modify-public playlist-modify-private playlist-read-private playlist-read-collaborative"
 
 sp = spotipy.Spotify(
     auth_manager=SpotifyOAuth(

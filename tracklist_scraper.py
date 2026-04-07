@@ -34,53 +34,105 @@ from urllib.parse import quote_plus
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
+from playwright.sync_api import sync_playwright
 
 load_dotenv()
 
 BRIGHT_DATA_API_KEY = os.getenv("BRIGHT_DATA_API_KEY")
 BRIGHTDATA_ZONE = os.getenv("BRIGHTDATA_ZONE", "web_unlocker1")
+BRIGHTDATA_CUSTOMER_ID = os.getenv("BRIGHTDATA_CUSTOMER_ID")
+BRIGHTDATA_ZONE_PASSWORD = os.getenv("BRIGHTDATA_ZONE_PASSWORD")
 BRIGHTDATA_API_URL = "https://api.brightdata.com/request"
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 log = logging.getLogger(__name__)
 
+# Shared Playwright browser instance (reused across fetches)
+_pw = None
+_browser = None
+
+
+def _get_browser():
+    """Get or create a shared Playwright browser with Bright Data proxy."""
+    global _pw, _browser
+    if _browser and _browser.is_connected():
+        return _browser
+
+    if not BRIGHTDATA_CUSTOMER_ID or not BRIGHTDATA_ZONE_PASSWORD:
+        log.error("BRIGHTDATA_CUSTOMER_ID and BRIGHTDATA_ZONE_PASSWORD must be set in .env")
+        return None
+
+    proxy_user = f"brd-customer-{BRIGHTDATA_CUSTOMER_ID}-zone-{BRIGHTDATA_ZONE}"
+    _pw = sync_playwright().start()
+    _browser = _pw.chromium.launch(
+        headless=True,
+        proxy={
+            "server": "http://brd.superproxy.io:33335",
+            "username": proxy_user,
+            "password": BRIGHTDATA_ZONE_PASSWORD,
+        },
+    )
+    return _browser
+
+
+def _close_browser():
+    """Clean up Playwright resources."""
+    global _pw, _browser
+    if _browser:
+        _browser.close()
+        _browser = None
+    if _pw:
+        _pw.stop()
+        _pw = None
+
 
 # ---------------------------------------------------------------------------
-# 1. FETCH — Bright Data with rendering + CAPTCHA bypass
+# 1. FETCH — Playwright + Bright Data proxy with CAPTCHA auto-submit
 # ---------------------------------------------------------------------------
 
 def fetch_html(url, retries=2, delay=5):
-    """Fetch a 1001Tracklists page via Bright Data web unlocker."""
-    if not BRIGHT_DATA_API_KEY:
-        log.error("BRIGHT_DATA_API_KEY not set in .env")
+    """Fetch a 1001Tracklists page via Playwright + Bright Data proxy."""
+    browser = _get_browser()
+    if not browser:
         return None
 
     for attempt in range(1, retries + 1):
         log.info(f"[{attempt}/{retries}] Fetching {url}")
+        context = None
         try:
-            resp = requests.post(
-                BRIGHTDATA_API_URL,
-                headers={"Authorization": f"Bearer {BRIGHT_DATA_API_KEY}"},
-                json={
-                    "zone": BRIGHTDATA_ZONE,
-                    "url": url,
-                    "format": "raw",
-                    "render": True,   # headless Chrome — executes JS, solves CAPTCHAs
-                },
-                timeout=120,
-            )
-            if resp.status_code == 200:
-                html = resp.text
-                # Quick sanity check — did we get a CAPTCHA page anyway?
-                if "Error 403" in html[:2000] or "cf-challenge" in html[:5000]:
-                    log.warning("Got a CAPTCHA/challenge page, retrying...")
-                    time.sleep(delay)
-                    continue
-                return html
-            else:
-                log.warning(f"Bright Data returned {resp.status_code}: {resp.text[:200]}")
-        except requests.RequestException as e:
-            log.warning(f"Request failed: {e}")
+            context = browser.new_context(ignore_https_errors=True)
+            page = context.new_page()
+            page.goto(url, wait_until="domcontentloaded", timeout=60000)
+            page.wait_for_timeout(3000)
+
+            # Auto-submit CAPTCHA gate if present
+            submit_btn = page.query_selector("input[type=submit]")
+            if submit_btn:
+                log.info("  Submitting CAPTCHA gate...")
+                submit_btn.click()
+                page.wait_for_load_state("domcontentloaded", timeout=60000)
+                page.wait_for_timeout(5000)
+
+            html = page.content()
+
+            # Sanity check — did we get actual content?
+            if not html or len(html) < 1000:
+                log.warning("  Got empty or very short page, retrying...")
+                time.sleep(delay)
+                continue
+
+            if "Error 403" in html[:2000] or "cf-challenge" in html[:5000]:
+                log.warning("  Got a CAPTCHA/challenge page, retrying...")
+                time.sleep(delay)
+                continue
+
+            return html
+
+        except Exception as e:
+            log.warning(f"  Fetch failed: {e}")
+        finally:
+            if context:
+                context.close()
 
         if attempt < retries:
             time.sleep(delay)
@@ -120,64 +172,83 @@ def _artist_slug(artist_name):
     return re.sub(r"[^a-z0-9]+", "-", artist_name.lower()).strip("-")
 
 
-def search_artist(artist_name):
+def _search_google_for_tracklists(artist_name, max_results=10):
     """
-    Search 1001Tracklists for an artist.
-    Returns (dj_page_html, dj_url, dj_name) or None.
-    Caches the HTML so we don't double-fetch.
+    Search Google for 1001Tracklists URLs for an artist.
+    Uses the shared Playwright browser with Bright Data proxy.
+    Paginates Google results to find up to max_results URLs.
+    Returns list of tracklist URLs.
     """
-    log.info(f"\nSearching 1001Tracklists for '{artist_name}'...")
-    search_url = f"{BASE_URL}/search/result.php?search_selection=1&main_search={quote_plus(artist_name)}"
-    html = fetch_html(search_url)
-    if not html:
-        return _guess_dj_url(artist_name)
+    browser = _get_browser()
+    if not browser:
+        return []
 
-    soup = BeautifulSoup(html, "html.parser")
+    slug = _artist_slug(artist_name)
+    query = f"site:1001tracklists.com/tracklist {artist_name}"
+    seen = set()
+    unique = []
+    context = None
+    try:
+        context = browser.new_context(ignore_https_errors=True)
+        page = context.new_page()
 
-    # Look for DJ profile links in search results
-    dj_links = []
-    for a in soup.find_all("a", href=True):
-        href = a["href"]
-        if "/dj/" in href and href.endswith("/index.html"):
-            full = href if href.startswith("http") else BASE_URL + href
-            name = a.get_text(strip=True)
-            dj_links.append((full, name))
+        # Paginate through Google results (10 per page)
+        for start in range(0, max_results + 10, 10):
+            page.goto(
+                f"https://www.google.com/search?q={quote_plus(query)}&num=10&start={start}",
+                wait_until="domcontentloaded",
+                timeout=60000,
+            )
+            page.wait_for_timeout(3000)
 
-    if not dj_links:
-        # Sometimes results are just tracklist links — collect those directly
-        tracklist_urls = _extract_tracklist_links(soup, artist_name)
-        if tracklist_urls:
-            log.info(f"  No DJ page found, but found {len(tracklist_urls)} tracklist links in search results")
-            return ("search_results_html", "search_results", tracklist_urls)
+            html = page.content()
+            urls = re.findall(
+                r'https?://(?:www\.)?1001tracklists\.com/tracklist/[a-z0-9]+/[a-z0-9_-]+\.html',
+                html,
+            )
 
-        log.info("  No results from search, trying URL guess...")
-        return _guess_dj_url(artist_name)
+            new_count = 0
+            for url in urls:
+                url = url.replace("http://", "https://")
+                if "www." not in url:
+                    url = url.replace("1001tracklists.com", "www.1001tracklists.com")
+                if url not in seen:
+                    seen.add(url)
+                    unique.append(url)
+                    new_count += 1
 
-    # Pick best match — prefer exact/close name match
-    artist_lower = artist_name.strip().lower()
-    best = None
-    for url, name in dj_links:
-        if name.strip().lower() == artist_lower:
-            best = (url, name)
-            break
-    if not best:
-        best = dj_links[0]
+            log.info(f"  Google page {start // 10 + 1}: {new_count} new URLs")
+            if new_count == 0 or len(unique) >= max_results:
+                break
 
-    # Fetch the DJ page now and cache the HTML
-    log.info(f"  Found DJ page: {best[1]} -> {best[0]}")
-    dj_html = fetch_html(best[0])
-    return (dj_html, best[0], best[1]) if dj_html else None
+        # Prioritize artist's own sets (URL slug starts with artist slug)
+        own = [u for u in unique if u.split("/")[-1].replace(".html", "").startswith(slug)]
+        other = [u for u in unique if u not in own]
+        prioritized = own + other
+
+        return prioritized[:max_results]
+    except Exception as e:
+        log.warning(f"  Google search failed: {e}")
+        return unique[:max_results]
+    finally:
+        if context:
+            context.close()
 
 
-def _guess_dj_url(artist_name):
-    """Guess the DJ profile URL from the artist name slug."""
-    slug = _artist_slug(artist_name)  # 'Sister Zo' -> 'sister-zo'
-    url = f"{BASE_URL}/dj/{slug}/index.html"
-    log.info(f"  Guessing DJ URL: {url}")
-    html = fetch_html(url)
-    if html and "404" not in html[:500]:
-        return (html, url, artist_name)
-    return None
+def search_and_get_sets(artist_name, max_sets=10):
+    """
+    Find tracklist URLs for an artist via Google search.
+    Returns list of tracklist URLs to scrape.
+    """
+    log.info(f"\nSearching for '{artist_name}' tracklists via Google...")
+    urls = _search_google_for_tracklists(artist_name, max_results=max_sets)
+    if urls:
+        slug = _artist_slug(artist_name)
+        own = [u for u in urls if slug in u.split("/")[-1]]
+        log.info(f"  Found {len(urls)} tracklists ({len(own)} own sets)")
+    else:
+        log.error(f"  Could not find '{artist_name}' on 1001Tracklists")
+    return urls
 
 
 def get_tracklist_urls_from_html(html, artist_name, max_sets=10):
@@ -185,45 +256,25 @@ def get_tracklist_urls_from_html(html, artist_name, max_sets=10):
     Parse a DJ profile page HTML and extract tracklist URLs.
     Filters to only include the artist's OWN sets (by matching URL slug).
     """
-    soup = BeautifulSoup(html, "html.parser")
-    all_urls = _extract_tracklist_links(soup, artist_name)
-
-    if all_urls:
-        log.info(f"  Found {len(all_urls)} sets by {artist_name}, using top {min(len(all_urls), max_sets)}")
-    else:
-        log.warning(f"  No tracklist links found for {artist_name}")
-
-    return all_urls[:max_sets]
-
-
-def _extract_tracklist_links(soup, artist_name=""):
-    """
-    Pull /tracklist/ links from a parsed page.
-    Checks both <a href> tags AND onclick/JS handlers (1001TL uses both).
-    When artist_name is provided, prioritize links whose URL contains the artist slug.
-    """
     slug = _artist_slug(artist_name) if artist_name else ""
     seen = set()
     own_sets = []
     other_sets = []
 
-    raw_html = str(soup)
+    # Method 1: regex on raw HTML for /tracklist/ links
+    for match in re.findall(r'/tracklist/[a-z0-9]+/[a-z0-9_-]+\.html', html):
+        full = BASE_URL + match
+        if full not in seen:
+            seen.add(full)
 
-    # Method 1: <a href="/tracklist/...">
+    # Method 2: parse <a> tags
+    soup = BeautifulSoup(html, "html.parser")
     for a in soup.find_all("a", href=True):
         href = a["href"]
         if "/tracklist/" in href and href.endswith(".html"):
             full = href if href.startswith("http") else BASE_URL + href
             if full not in seen:
                 seen.add(full)
-
-    # Method 2: JS onclick handlers and inline scripts
-    # e.g. "ferra-black-some-mix-2021.html', '_self');"
-    # or "/tracklist/28z748yt/ferra-black-some-mix.html"
-    for match in re.findall(r'/tracklist/[a-z0-9]+/[a-z0-9_-]+\.html', raw_html):
-        full = BASE_URL + match
-        if full not in seen:
-            seen.add(full)
 
     # Sort into own sets vs featuring sets
     for full in seen:
@@ -235,31 +286,8 @@ def _extract_tracklist_links(soup, artist_name=""):
 
     if own_sets:
         log.info(f"  {len(own_sets)} own sets, {len(other_sets)} featuring sets (skipped)")
-        return own_sets
-    # Fall back to all sets if no slug match
-    return own_sets + other_sets
-
-
-def search_and_get_sets(artist_name, max_sets=10):
-    """
-    Full pipeline: artist name -> search 1001TL -> DJ page -> tracklist URLs.
-    Returns list of tracklist URLs to scrape.
-    """
-    result = search_artist(artist_name)
-    if not result:
-        log.error(f"  Could not find '{artist_name}' on 1001Tracklists")
-        return []
-
-    dj_html, dj_url, name_or_urls = result
-
-    # If search returned tracklist URLs directly (no DJ page found)
-    if dj_url == "search_results":
-        urls = name_or_urls[:max_sets]
-        log.info(f"  Using {len(urls)} tracklists from search results")
-        return urls
-
-    # Parse the cached DJ page HTML — no re-fetch needed
-    return get_tracklist_urls_from_html(dj_html, artist_name, max_sets=max_sets)
+        return own_sets[:max_sets]
+    return (own_sets + other_sets)[:max_sets]
 
 
 # ---------------------------------------------------------------------------
@@ -434,67 +462,112 @@ def clean_track_name(artist, title):
 # ---------------------------------------------------------------------------
 
 def get_spotify():
-    """Lazy-init Spotify client (only when needed)."""
+    """Lazy-init Spotify client. Uses a plain session to prevent spotipy from retrying 429s."""
     import spotipy
     from spotipy.oauth2 import SpotifyOAuth
 
-    return spotipy.Spotify(auth_manager=SpotifyOAuth(
-        scope="playlist-modify-public playlist-modify-private",
-        client_id=os.getenv("SPOTIPY_CLIENT_ID"),
-        client_secret=os.getenv("SPOTIPY_CLIENT_SECRET"),
-        redirect_uri=os.getenv("SPOTIPY_REDIRECT_URI", "http://127.0.0.1:8888/callback"),
-    ))
+    # Pass a pre-built session so spotipy doesn't install its retry adapter
+    session = requests.Session()
+    return spotipy.Spotify(
+        auth_manager=SpotifyOAuth(
+            scope="playlist-modify-public playlist-modify-private playlist-read-private playlist-read-collaborative",
+            client_id=os.getenv("SPOTIPY_CLIENT_ID"),
+            client_secret=os.getenv("SPOTIPY_CLIENT_SECRET"),
+            redirect_uri=os.getenv("SPOTIPY_REDIRECT_URI", "http://127.0.0.1:8888/callback"),
+        ),
+        requests_session=session,
+    )
 
 
-def find_spotify_track(sp, artist, title):
-    """Search Spotify for a single track. Returns track ID or None."""
+SPOTIFY_CACHE_PATH = os.path.join(os.path.dirname(__file__), "spotify_cache.json")
+BATCH_SIZE = 50          # search this many tracks, then add to playlist
+BATCH_PAUSE = 60         # seconds to pause between batches
+TRACK_DELAY = 4          # seconds between each search call (~8 calls per 30s window)
+
+
+class SpotifyRateLimited(Exception):
+    pass
+
+
+def _load_spotify_cache():
+    if os.path.exists(SPOTIFY_CACHE_PATH):
+        with open(SPOTIFY_CACHE_PATH, "r") as f:
+            return json.load(f)
+    return {}
+
+
+def _save_spotify_cache(cache):
+    with open(SPOTIFY_CACHE_PATH, "w") as f:
+        json.dump(cache, f)
+
+
+def _cache_key(artist, title):
+    return f"{artist.strip().lower()}||{title.strip().lower()}"
+
+
+def find_spotify_track(sp, artist, title, cache):
+    """Search Spotify for a single track with caching.
+    Returns track ID or None. Raises SpotifyRateLimited on 429."""
     if artist == "spotify_uri":
-        # Already have the URI
-        track_id = title.replace("spotify:track:", "")
-        return track_id
+        return title.replace("spotify:track:", "")
+
+    key = _cache_key(artist, title)
+    if key in cache:
+        return cache[key]  # cached ID or None (not found)
 
     queries = [
         f"track:{title} artist:{artist}",
         f"{artist} {title}",
-        f"{title} {artist}",
     ]
     for q in queries:
         try:
             results = sp.search(q=q, type="track", limit=1)
             items = results.get("tracks", {}).get("items", [])
             if items:
-                return items[0]["id"]
-        except Exception:
+                tid = items[0]["id"]
+                cache[key] = tid
+                return tid
+        except Exception as e:
+            if "429" in str(e) or "rate" in str(e).lower() or "Too many" in str(e):
+                raise SpotifyRateLimited(str(e))
             continue
+
+    cache[key] = None  # not found — don't search again
     return None
 
 
-def create_spotify_playlist(sp, track_ids, playlist_name="Escuchar"):
-    """Create (or find) a playlist and add tracks."""
-    user_id = sp.current_user()["id"]
-
-    # Find existing playlist
-    playlist_id = None
-    playlist_url = None
+def _get_or_create_playlist(sp, playlist_name):
+    """Find or create a playlist. Returns (playlist_id, playlist_url) or (None, None)."""
+    # Find existing
     offset = 0
     while True:
         page = sp.current_user_playlists(limit=50, offset=offset)
         for pl in page["items"]:
             if pl and pl.get("name", "").strip().lower() == playlist_name.strip().lower():
-                playlist_id = pl["id"]
-                playlist_url = pl["external_urls"]["spotify"]
-                break
-        if playlist_id or len(page["items"]) < 50:
+                return pl["id"], pl["external_urls"]["spotify"]
+        if len(page["items"]) < 50:
             break
         offset += 50
 
-    if not playlist_id:
-        new_pl = sp.user_playlist_create(user=user_id, name=playlist_name, public=True)
-        playlist_id = new_pl["id"]
-        playlist_url = new_pl["external_urls"]["spotify"]
-        log.info(f"Created playlist: {playlist_name}")
+    # Create via /me/playlists (works in dev mode)
+    try:
+        token = sp.auth_manager.get_access_token(as_dict=False)
+        resp = requests.post(
+            "https://api.spotify.com/v1/me/playlists",
+            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+            json={"name": playlist_name, "public": True},
+        )
+        if resp.status_code == 201:
+            new_pl = resp.json()
+            log.info(f"Created playlist: {playlist_name}")
+            return new_pl["id"], new_pl["external_urls"]["spotify"]
+    except Exception as e:
+        log.error(f"Failed to create playlist: {e}")
+    return None, None
 
-    # Get existing track IDs to avoid duplicates
+
+def _add_tracks_to_playlist(sp, playlist_id, track_ids):
+    """Add tracks to playlist, skipping duplicates."""
     existing = set()
     offset = 0
     while True:
@@ -512,12 +585,9 @@ def create_spotify_playlist(sp, track_ids, playlist_name="Escuchar"):
     new_ids = [tid for tid in track_ids if tid and tid not in existing]
     if new_ids:
         for i in range(0, len(new_ids), 100):
-            sp.playlist_add_items(playlist_id, new_ids[i:i+100])
-        log.info(f"Added {len(new_ids)} tracks to playlist")
-    else:
-        log.info("All tracks already in playlist")
-
-    return playlist_url
+            sp.playlist_add_items(playlist_id, new_ids[i:i + 100])
+        log.info(f"  Added {len(new_ids)} tracks to playlist")
+    return len(new_ids)
 
 
 # ---------------------------------------------------------------------------
@@ -671,26 +741,72 @@ def main():
     # Save CSV
     save_tracks_csv(unique_tracks, args.output)
 
-    # Spotify playlist
+    # Spotify playlist — create first, then search+add in batches
     if args.playlist:
-        log.info(f"\nSearching Spotify and creating playlist '{args.playlist}'...")
+        log.info(f"\nCreating Spotify playlist '{args.playlist}'...")
         sp = get_spotify()
-        track_ids = []
-        for i, (artist, title, _) in enumerate(unique_tracks, 1):
-            display = title if artist == "spotify_uri" else f"{artist} - {title}"
-            tid = find_spotify_track(sp, artist, clean_track_name(artist, title))
-            if tid:
-                track_ids.append(tid)
-                log.info(f"  [{i}/{len(unique_tracks)}] Found: {display}")
-            else:
-                log.warning(f"  [{i}/{len(unique_tracks)}] Not found: {display}")
+        cache = _load_spotify_cache()
+        cached_hits = sum(1 for a, t, _ in unique_tracks if _cache_key(a, clean_track_name(a, t)) in cache)
+        log.info(f"  {cached_hits}/{len(unique_tracks)} tracks already cached, {len(unique_tracks) - cached_hits} need searching")
 
-        if track_ids:
-            url = create_spotify_playlist(sp, track_ids, args.playlist)
-            log.info(f"\nPlaylist: {url}")
+        # Step 1: Create/find playlist FIRST
+        playlist_id, playlist_url = _get_or_create_playlist(sp, args.playlist)
+        if not playlist_id:
+            log.error("Failed to create playlist. Tracks saved to CSV.")
         else:
-            log.error("No tracks found on Spotify")
+            log.info(f"  Playlist ready: {playlist_url}")
+
+            # Step 2: Search in batches, add to playlist after each batch
+            batch_ids = []
+            total_found = 0
+            not_found = 0
+            for i, (artist, title, _) in enumerate(unique_tracks, 1):
+                display = title if artist == "spotify_uri" else f"{artist} - {title}"
+                try:
+                    tid = find_spotify_track(sp, artist, clean_track_name(artist, title), cache)
+                except SpotifyRateLimited:
+                    log.error(f"\n  Rate limited at track {i}/{len(unique_tracks)}!")
+                    _save_spotify_cache(cache)
+                    # Add whatever we have in this batch
+                    if batch_ids:
+                        _add_tracks_to_playlist(sp, playlist_id, batch_ids)
+                        total_found += len(batch_ids)
+                    log.info(f"  Saved {total_found} tracks to playlist before rate limit.")
+                    log.info(f"  Run again later to continue — cached tracks won't re-search.")
+                    break
+                if tid:
+                    batch_ids.append(tid)
+                    if i % 25 == 0 or i <= 3:
+                        log.info(f"  [{i}/{len(unique_tracks)}] Found: {display}")
+                else:
+                    not_found += 1
+                    if not_found <= 10:
+                        log.warning(f"  [{i}/{len(unique_tracks)}] Not found: {display}")
+
+                # End of batch: add to playlist, save cache, pause
+                if len(batch_ids) >= BATCH_SIZE:
+                    _add_tracks_to_playlist(sp, playlist_id, batch_ids)
+                    total_found += len(batch_ids)
+                    batch_ids = []
+                    _save_spotify_cache(cache)
+                    log.info(f"  Batch done — {total_found} tracks in playlist. Pausing {BATCH_PAUSE}s...")
+                    time.sleep(BATCH_PAUSE)
+                elif artist != "spotify_uri" and _cache_key(artist, clean_track_name(artist, title)) not in cache:
+                    pass  # cache miss was just searched — already delayed by API call time
+                    time.sleep(TRACK_DELAY)
+            else:
+                # Loop completed without rate limit — add final batch
+                if batch_ids:
+                    _add_tracks_to_playlist(sp, playlist_id, batch_ids)
+                    total_found += len(batch_ids)
+                _save_spotify_cache(cache)
+                log.info(f"\n  Done! {total_found} tracks in playlist, {not_found} not found on Spotify")
+
+            log.info(f"\nPlaylist: {playlist_url}")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    finally:
+        _close_browser()

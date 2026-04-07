@@ -4,7 +4,7 @@
       "command": "npx",
       "args": [
         "mcp-remote",
-        "https://mcp.brightdata.com/mcp?token=e8*****************************************42"
+        "https://mcp.brightdata.com/mcp?token=2b576f4c-c779-4314-a82e-ae7ae110cd2a"
       ]
     }
   }

@@ -22,4 +22,5 @@ pydub==0.25.1
 
 # Utilities
 click==8.1.7
-rich==13.7.0 
+rich==13.7.0
+playwright>=1.40.0
