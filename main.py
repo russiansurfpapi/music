@@ -338,10 +338,14 @@ def get_artist_id(artist_name):
         return None
 
 
-def get_top_tracks(artist_id, limit=5):
+def get_top_tracks(artist_name, artist_id, limit=7):
+    """Get top tracks via search (top-tracks endpoint is 403 in dev mode)."""
     try:
-        official_top = sp.artist_top_tracks(artist_id, country="US")["tracks"]
-        return [track["id"] for track in official_top[:limit] if track.get("id")]
+        results = sp.search(q=f"artist:{artist_name}", type="track", limit=limit)
+        tracks = results["tracks"]["items"]
+        # Filter to tracks by this artist
+        matching = [t for t in tracks if any(a["id"] == artist_id for a in t["artists"])]
+        return [t["id"] for t in matching[:limit] if t.get("id")]
     except Exception as e:
         print(f"⚠️ Failed to get top tracks: {e}")
         return []
@@ -349,7 +353,13 @@ def get_top_tracks(artist_id, limit=5):
 
 def get_recent_releases(artist_id, limit=5):
     try:
-        albums = sp.artist_albums(artist_id, album_type="single,album", limit=20)
+        albums_items = []
+        for off in range(0, 20, 10):
+            page = sp.artist_albums(artist_id, limit=10, offset=off)
+            albums_items.extend(page["items"])
+            if len(page["items"]) < 10:
+                break
+        albums = {"items": [a for a in albums_items if a.get("album_type") in ("single", "album")]}
         all_tracks = []
         seen_albums = set()
         
@@ -376,11 +386,18 @@ def get_recent_releases(artist_id, limit=5):
 def get_top_albums_tracks(artist_id, num_albums=2, min_tracks=2):
     """Get tracks from the top N most popular albums for an artist."""
     try:
-        albums_response = sp.artist_albums(artist_id, album_type="album", limit=50)
+        all_albums = []
+        for off in range(0, 50, 10):
+            page = sp.artist_albums(artist_id, limit=10, offset=off)
+            all_albums.extend(page["items"])
+            if len(page["items"]) < 10:
+                break
         seen_names = set()
         candidate_ids = []
 
-        for album in albums_response["items"]:
+        for album in all_albums:
+            if album.get("album_type") not in ("album", "compilation"):
+                continue
             name_lower = album["name"].strip().lower()
             if name_lower in seen_names:
                 continue
@@ -390,22 +407,18 @@ def get_top_albums_tracks(artist_id, num_albums=2, min_tracks=2):
             candidate_ids.append(album["id"])
 
         if not candidate_ids:
-            # Fallback: try compilations too
-            albums_response = sp.artist_albums(artist_id, album_type="album,compilation", limit=20)
-            candidate_ids = [a["id"] for a in albums_response["items"][:10]]
-
-        if not candidate_ids:
             return [], []
 
-        # Batch fetch full album details (up to 20 at a time) — way faster than per-track
+        # Fetch album details individually (batch endpoint is 403 in dev mode)
         full_albums = []
-        for i in range(0, len(candidate_ids), 20):
-            batch = candidate_ids[i:i + 20]
-            result = sp.albums(batch)
-            full_albums.extend([a for a in result["albums"] if a])
+        for alb_id in candidate_ids[:10]:
+            try:
+                full_albums.append(sp.album(alb_id))
+            except Exception:
+                continue
 
-        # Sort by popularity (album-level score from Spotify)
-        full_albums.sort(key=lambda a: a.get("popularity", 0), reverse=True)
+        # Sort by release date (newest first, since popularity unavailable in dev mode)
+        full_albums.sort(key=lambda a: a.get("release_date", ""), reverse=True)
 
         all_track_ids = []
         album_names = []
@@ -518,7 +531,7 @@ def main(artist_names, playlist_name="Escuchar"):
                 print(f"❌ Artist '{artist_name}' not found.")
                 continue
 
-            top_tracks = get_top_tracks(artist_id, limit=7)
+            top_tracks = get_top_tracks(artist_name, artist_id, limit=7)
             recent_tracks = get_recent_releases(artist_id, limit=5)
             album_tracks, album_names = get_top_albums_tracks(artist_id, num_albums=2)
 

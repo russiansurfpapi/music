@@ -1,0 +1,163 @@
+# 3% CHAINS — curated musical lineages.
+#
+# Each chain is an argument about causation: source → flip → evolved → modern.
+# Order matters. You listen forward in time to hear the 3% shift.
+# Tracks NOT already in the user's library are looked up via Spotify search on first push.
+#
+# Format:
+#   - title: short, in caps, like a Virgil collection title
+#     thesis: one sentence. The argument.
+#     footnotes: 1-3 sentences of context / what to listen for
+#     tracks:
+#       - "Artist — Title"
+#       - ...
+#
+# Keep each chain 5-8 tracks. Too long, the lesson blurs.
+
+chains:
+  - id: funky-drummer
+    title: "THE FUNKY DRUMMER NEVER STOPPED"
+    thesis: "One 8-bar break plays the last 50 years of Black music."
+    footnotes: >
+      Clyde Stubblefield's 1970 drum break is the most-sampled sound in recorded music.
+      Listen for the snare ghost-note on the 'and' of 4. Every flip keeps it — the 3% shifts
+      are tempo, EQ, what's on top. The groove is load-bearing.
+    tracks:
+      - "James Brown — Funky Drummer"
+      - "Public Enemy — Fight the Power"
+      - "LL Cool J — Mama Said Knock You Out"
+      - "Dr. Dre — Let Me Ride"
+      - "Kendrick Lamar — King Kunta"
+      - "Little Simz — Venom"
+
+  - id: dembow
+    title: "DEMBOW IS A NATION"
+    thesis: "A Jamaican riddim became the central nervous system of Latin music."
+    footnotes: >
+      Shabba Ranks → Panama → Puerto Rico → everywhere. The pattern: BOOM-ch-boom-CHICK.
+      By 2023 it's house-inflected (Bad Bunny) but the skeleton is the same 1990 Steely & Clevie.
+    tracks:
+      - "Shabba Ranks — Dem Bow"
+      - "El General — Tu Pum Pum"
+      - "Tego Calderón — Pa' Que Retozen"
+      - "Daddy Yankee — Gasolina"
+      - "J Balvin — Ginza"
+      - "Bad Bunny — WHERE SHE GOES"
+
+  - id: amen-break
+    title: "AMEN, BROTHER"
+    thesis: "Six seconds of 1969 built jungle, drum & bass, and breakcore."
+    footnotes: >
+      The Winstons' B-side break. Chopped, time-stretched, re-pitched, mirrored.
+      Listen for the snare hit on the 2 AND the 3 — that double-hit is the signature.
+      Mainstream ignored it; producers treated it like a building material.
+    tracks:
+      - "The Winstons — Amen, Brother"
+      - "N.W.A. — Straight Outta Compton"
+      - "LTJ Bukem — Music"
+      - "Goldie — Timeless"
+      - "Roni Size / Reprazent — Brown Paper Bag"
+      - "Venetian Snares — Hajnal"
+
+  - id: 303
+    title: "THE MACHINE THAT REFUSED"
+    thesis: "A failed bassline synth rewrote what dance music sounded like."
+    footnotes: >
+      Roland's 1981 TB-303 was discontinued because guitarists hated it. Chicago kids found
+      them in pawnshops, twisted the resonance knob, invented acid. Listen for the squelch —
+      the filter cutoff is the whole instrument.
+    tracks:
+      - "Phuture — Acid Tracks"
+      - "A Guy Called Gerald — Voodoo Ray"
+      - "808 State — Pacific State"
+      - "Hardfloor — Acperience 1"
+      - "Daft Punk — Da Funk"
+      - "Peggy Gou — It Goes Like (Nanana)"
+
+  - id: i-feel-love
+    title: "I FEEL LOVE IS STILL HAPPENING"
+    thesis: "Giorgio Moroder's 1977 synth arpeggio is the blueprint for everything that pulses."
+    footnotes: >
+      Donna Summer's vocal is the hook, but the lesson is the 16th-note Moog pattern underneath.
+      That pattern is disco → hi-NRG → house → synth pop → hyperpop. Same arp, new decade, new chest feeling.
+    tracks:
+      - "Donna Summer — I Feel Love"
+      - "Bronski Beat — Smalltown Boy"
+      - "Hercules & Love Affair — Blind"
+      - "Beyoncé — Cuff It"
+      - "Charli XCX — 360"
+      - "Jessie Ware — Free Yourself"
+
+  - id: trans-europe
+    title: "TRANS-EUROPE TO DETROIT"
+    thesis: "Three Black kids in Detroit heard Kraftwerk and invented techno."
+    footnotes: >
+      Juan Atkins, Derrick May, Kevin Saunderson — the Belleville Three — treated Kraftwerk
+      as soul music for robots. Then they made Afrofuturist machine music. Listen for the
+      strictness of the rhythm and the melancholy of the melody — European structure, Black feeling.
+    tracks:
+      - "Kraftwerk — Trans-Europe Express"
+      - "Afrika Bambaataa — Planet Rock"
+      - "Cybotron — Clear"
+      - "Derrick May — Strings of Life"
+      - "Jeff Mills — The Bells"
+      - "DJ Stingray — Isolation"
+
+  - id: chicago-house
+    title: "CHICAGO IS A PRAYER"
+    thesis: "House music is gospel with a drum machine."
+    footnotes: >
+      The Warehouse, Frankie Knuckles, 1977 disco filtered through a Roland 909.
+      Listen for the church-chord progression under the machine kick. Deep house never
+      stopped being a spiritual — even when DJ Koze is producing it in 2018.
+    tracks:
+      - "Frankie Knuckles — Your Love"
+      - "Marshall Jefferson — Move Your Body"
+      - "Mr. Fingers — Can You Feel It"
+      - "Moodymann — I Can't Kick This Feeling When It Hits"
+      - "Kerri Chandler — Bar A Thym"
+      - "DJ Koze — Pick Up"
+
+  - id: dubstep-140
+    title: "SOUTH LONDON AT 140"
+    thesis: "Before the drop was a product, dubstep was a room with subwoofers."
+    footnotes: >
+      FWD>> at Plastic People, 2002-2007. Half-time feel over a 140 BPM grid.
+      Listen for space — the silence between the kick and the bass weight. The genre
+      got louder and dumber after 2010; this is what it was before.
+    tracks:
+      - "Horsepower Productions — Gorgon Sound"
+      - "Skream — Midnight Request Line"
+      - "Kode9 & The Spaceape — 9 Samurai"
+      - "Burial — Archangel"
+      - "Joy Orbison — Hyph Mngo"
+      - "Mala — Changes"
+
+  - id: think-break
+    title: "THINK (ABOUT IT)"
+    thesis: "Lyn Collins' 1972 yell built half of late-80s hip-hop."
+    footnotes: >
+      James Brown produced it. The 'yeah! woo!' shouts and the funky drum break became
+      the skeleton of 'It Takes Two,' 'Alright,' and a thousand others. Listen for the
+      exclamation — everyone's quoting the same 2-second vocal stab.
+    tracks:
+      - "Lyn Collins — Think (About It)"
+      - "Rob Base & DJ E-Z Rock — It Takes Two"
+      - "N.W.A. — Express Yourself"
+      - "Janet Jackson — Alright"
+      - "Missy Elliott — Get Ur Freak On"
+
+  - id: cosmic-disco
+    title: "FRENCH TOUCH IS A FILTER"
+    thesis: "1970s cosmic disco + a Korg MS-20 filter = 90s French house."
+    footnotes: >
+      Giorgio Moroder and Cerrone already had the template. Parisian kids in the 90s
+      took those loops, bandpassed them, and had a scene. Listen for the filter sweep —
+      it's the sound of disco being *compressed* into something tighter.
+    tracks:
+      - "Giorgio Moroder — Chase"
+      - "Space — Magic Fly"
+      - "Daft Punk — Around the World"
+      - "Stardust — Music Sounds Better with You"
+      - "Todd Terje — Inspector Norse"
+      - "DJ Koze — Seeing Aliens"

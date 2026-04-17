@@ -1,0 +1,986 @@
+# tag_map.yaml — canonical label -> list of raw lastfm/spotify-genre tag patterns (lowercase, exact match)
+# Six layers. For singular layers (genre, subgenre, rhythm) the highest-weighted match wins.
+# For multi-value layers (production_dna, texture, lineage) all matches are kept.
+# Edit freely. Add new raw tags under the right canonical.
+
+# ---------------- SKIP TAGS ----------------
+# Tags listed here are dropped before matching. Never contribute, never logged as unmapped.
+# Four buckets: nationality/country-too-broad, meta/platform, subjective/mood-noise, artist names.
+skip_tags:
+  # Nationality / broad-country — too generic for lineage (city-level tags remain useful).
+  - american
+  - british
+  - english
+  - canadian
+  - australian
+  - german
+  - french
+  - spanish
+  - italian
+  - dutch
+  - swedish
+  - norwegian
+  - danish
+  - finnish
+  - polish
+  - russian
+  - irish
+  - scottish
+  - welsh
+  - swiss
+  - belgian
+  - austrian
+  - greek
+  - portuguese
+  - czech
+  - hungarian
+  - romanian
+  - turkish
+  - us
+  - usa
+  - u.s.a.
+  - united states
+  - united kingdom
+  - uk
+  - england
+  - canada
+  - australia
+  - france
+  - germany
+  - spain
+  - italy
+  - netherlands
+  - sweden
+  - norway
+  - denmark
+  - finland
+  - poland
+  - russia
+  - ireland
+  - scotland
+  - wales
+  - switzerland
+  - belgium
+  - austria
+  - greece
+  - portugal
+  - czech republic
+  - hungary
+  - romania
+  - europe
+  - european
+  - north america
+  - north american
+  - latin america  # note: specific latin scenes still pick up via reggaetón/world
+
+  # Meta / platform / listmaking / self-curation noise
+  - spotify
+  - my top songs
+  - my favourites
+  - my favorites
+  - favorites
+  - favourites
+  - my music
+  - mine
+  - seen live
+  - all
+  - "under 2000 listeners"
+  - under 2000 listeners
+  - dj
+  - composer
+  - composers
+  - producer
+  - remixer
+  - edits
+  - remix
+  - remixes
+  - edit
+  - mashup
+  - bootleg
+  - ninja tune       # label, not genre
+  - ed banger        # label, not genre
+  - young money      # label, not genre
+  - "spotify"
+
+  # Subjective / mood-noise (not useful for classification)
+  - good
+  - bad
+  - great
+  - hot
+  - fire
+  - love
+  - catchy
+  - fun
+  - sexy
+  - handsome
+  - ugly
+  - cool
+  - awesome
+  - amazing
+  - beautiful
+  - favourite
+  - favorite
+  - summer
+  - winter
+  - autumn
+  - spring
+  - party          # too vague; euphoric texture handles real party tags
+  - heard on pandora
+  - mellow         # caught by texture warm? too vague, skip
+  - chill          # handled via chillwave/chillhop if more specific; bare "chill" too vague
+  - vibe
+  - vibes
+  - vibey
+  - mood
+  - moody
+  - old
+  - new
+  - old school
+  - modern
+
+  # Generic vocal/instrument descriptors (not genre-carrying)
+  - female vocalists
+  - female vocalist
+  - male vocalists
+  - male vocalist
+  - vocal
+  - vocals
+  - singer-songwriter
+  - singer
+  - instrumental   # would need to be its own production_dna bucket; too ambiguous currently
+  - acoustic
+  - piano
+
+  # Top artist-name tags (bleed into classification from artist-level lookups)
+  - drake
+  - kanye west
+  - kid cudi
+  - jay-z
+  - travis scott
+  - playboi carti
+  - frank ocean
+  - tyler the creator
+  - beyonce
+  - rihanna
+  - taylor swift
+  - kendrick lamar
+  - j cole
+  - j. cole
+  - lil wayne
+  - eminem
+
+  # Dataset / scraping artifacts
+  - funk_add_to_lidarr_batch_13
+  - funk_add_to_lidarr_batch_16
+  - funk_add_to_lidarr_batch_14
+  - funk_add_to_lidarr_batch_15
+
+# ---------------- LAYER 1: GENRE ----------------
+genre:
+  house:
+    - house
+    - electronic
+    - dance
+    - edm
+    - electronica
+    - club
+    - electronic dance music
+    - house music
+  techno:
+    - techno
+    - rave
+  "reggaetón":
+    - reggaeton
+    - "reggaetón"
+    - perreo
+    - latin urban
+    - trap latino
+    - neoperreo
+  uk bass:
+    - uk bass
+    - bass music
+    - bass
+    - bassline
+    - uk funky
+    - future garage
+    - wonky
+  hip-hop:
+    - hip-hop
+    - hip hop
+    - hiphop
+    - rap
+    - hip-hop/rap
+    - pop rap
+    - alternative hip-hop
+    - alternative hip hop
+    - alt hip hop
+    - alternative rap
+  ambient:
+    - ambient
+    - drone
+    - new age
+    - soundscape
+    - field recording
+    - dark ambient
+  disco-funk-soul:
+    - disco
+    - funk
+    - soul
+    - nu-disco
+    - nu disco
+    - boogie
+    - rnb
+    - r&b
+    - r and b
+    - contemporary rnb
+    - contemporary r&b
+    - rhythm and blues
+    - alternative rnb
+    - alternative r&b
+    - pop soul
+    - sophisti-pop
+    - neo-soul
+    - neo soul
+    - synth funk
+    - psychedelic soul
+  pop:
+    - pop
+    - synthpop
+    - synth-pop
+    - synth pop
+    - dance-pop
+    - dance pop
+    - indie pop
+    - electropop
+    - art pop
+    - dream pop
+    - bedroom pop
+    - alt-pop
+    - alternative pop
+    - chamber pop
+    - bubblegum pop
+    - latin pop
+    - french pop
+    - ambient pop
+    - psychedelic pop
+  rock:
+    - rock
+    - indie rock
+    - post-punk
+    - post punk
+    - punk
+    - punk rock
+    - alternative
+    - alternative rock
+    - hard rock
+    - classic rock
+    - soft rock
+    - pop rock
+    - progressive rock
+    - psychedelic rock
+    - folk rock
+    - heavy metal
+    - metal
+    - black metal
+    - hardcore punk
+    - emo
+    - shoegaze
+    - new wave
+    - garage rock
+  folk:
+    - folk
+    - indie folk
+    - folk rock
+  blues:
+    - blues
+  classical:
+    - classical
+    - contemporary classical
+    - soundtrack
+  jazz:
+    - jazz
+    - nu jazz
+    - jazz fusion
+    - bossa nova
+    - acid jazz
+    - free jazz
+    - fusion
+  world:
+    - world
+    - world music
+    - afrobeat
+    - latin
+    - cumbia
+    - baile funk
+    - dancehall
+    - mpb        # brazilian popular music
+    - ragga
+  reggae:
+    - reggae
+    - roots reggae
+    - ska
+  dub:
+    - dub
+    - dub reggae
+  breaks:
+    - breaks
+    - breakbeat
+    - big beat
+  dnb:
+    - drum and bass
+    - drum & bass
+    - drum n bass
+    - dnb
+    - d&b
+    - jungle
+    - liquid dnb
+    - liquid drum and bass
+    - liquid funk
+    - neurofunk
+  dubstep:
+    - dubstep
+    - riddim
+    - post-dubstep
+  garage:
+    - garage
+    - uk garage
+    - 2-step
+    - 2step
+    - speed garage
+  trance:
+    - trance
+    - progressive trance
+    - psytrance
+    - goa
+  idm:
+    - idm
+    - intelligent dance music
+    - glitch
+    - glitch-hop
+    - experimental electronic
+    - experimental
+    - experimental hip-hop
+    - experimental hip hop
+    - noise
+    - rhythmic noise
+    - avant-garde
+    - electroacoustic
+    - folktronica
+    - indietronica
+  downtempo:
+    - downtempo
+    - trip-hop
+    - trip hop
+    - chillout
+    - chill-out
+    - chillhop
+    - jazz hop
+    - jazz rap   # jazz-hop family; also feeds subgenre
+    - lounge
+    - easy listening
+
+# ---------------- LAYER 2: SUBGENRE ----------------
+subgenre:
+  # --- House variants ---
+  acid house:
+    - acid house
+    - acid
+  deep house:
+    - deep house
+    - deephouse
+    - deep-house
+  tech house:
+    - tech house
+    - tech-house
+  afro house:
+    - afro house
+    - afro-house
+    - afrohouse
+  minimal techno:
+    - minimal techno
+    - minimal
+    - microhouse
+    - micro house
+  detroit techno:
+    - detroit techno
+  industrial techno:
+    - industrial techno
+    - industrial
+    - hard techno
+    - ebm
+  melodic techno:
+    - melodic techno
+    - melodic house
+    - melodic house & techno
+    - melodic house and techno
+  acid techno:
+    - acid techno
+  dub techno:
+    - dub techno
+    - deep techno
+  ambient techno:
+    - ambient techno
+  ambient house:
+    - ambient house
+  progressive house:
+    - progressive house
+    - prog house
+  hard house:
+    - hard house
+    - hardhouse
+  chicago house:
+    - chicago house
+    - classic house
+  french house:
+    - french house
+    - filter house
+    - french touch
+  garage house:
+    - garage house
+  disco house:
+    - disco house
+  funky house:
+    - funky house
+  soulful house:
+    - soulful house
+    - vocal house
+  tribal house:
+    - tribal house
+    - tribal
+  outsider house:
+    - outsider house
+  lo-fi house:
+    - lo-fi house
+    - lofi house
+  tropical house:
+    - tropical house
+  jackin house:
+    - jackin house
+    - jackin' house
+  bass house:
+    - bass house
+  future house:
+    - future house
+  ghetto house:
+    - ghetto house
+  hip house:
+    - hip house
+  # --- Garage / Bass ---
+  uk garage:
+    - uk garage
+    - 2-step
+    - 2step
+    - speed garage
+    - ukg
+  dubstep (original):
+    - dubstep
+    - uk dubstep
+    - original dubstep
+    - 140
+  post-dubstep:
+    - post-dubstep
+    - post dubstep
+  grime:
+    - grime
+  future bass:
+    - future bass
+  jungle/dnb:
+    - jungle
+    - drum and bass
+    - drum & bass
+    - dnb
+    - d&b
+    - liquid dnb
+    - liquid funk
+    - neurofunk
+  # --- Hip-hop variants ---
+  trap:
+    - trap
+    - trap music
+  boom bap:
+    - boom bap
+    - boom-bap
+    - east coast hip-hop
+    - east coast hip hop
+    - east coast rap
+  lo-fi:
+    - lo-fi
+    - lofi
+    - lo fi
+    - lo-fi hip hop
+    - chillhop
+  jazz rap:
+    - jazz rap
+    - jazz hop
+    - jazz hip hop
+    - jazz hip-hop
+  instrumental hip hop:
+    - instrumental hip hop
+    - instrumental hip-hop
+    - abstract hip hop
+    - abstract hip-hop
+    - abstract
+    - beats
+  conscious hip hop:
+    - conscious hip hop
+    - conscious rap
+  gangsta rap:
+    - gangsta rap
+  southern rap:
+    - southern rap
+    - southern hip hop
+    - dirty south
+    - crunk
+  west coast rap:
+    - west coast rap
+    - west coast hip hop
+    - west coast hip-hop
+  uk rap:
+    - uk rap
+    - uk hip hop
+    - uk hip-hop
+  underground hip hop:
+    - underground hip hop
+    - underground hip-hop
+    - underground rap
+  cloud rap:
+    - cloud rap
+  emo rap:
+    - emo rap
+  drill:
+    - drill
+    - uk drill
+    - brooklyn drill
+  g-funk:
+    - g-funk
+    - g funk
+  pop rap:
+    - pop rap
+  trap rap:
+    - trap rap
+  # --- Latin / world ---
+  trap latino:
+    - trap latino
+  neoperreo:
+    - neoperreo
+  afrobeats:
+    - afrobeats
+    - afropop
+    - afro-pop
+  amapiano:
+    - amapiano
+  moombahton:
+    - moombahton
+  baltimore club:
+    - baltimore club
+    - jersey club
+    - club music
+  ghettotech:
+    - ghettotech
+  miami bass:
+    - miami bass
+  # --- Disco / era dance ---
+  italo disco:
+    - italo disco
+    - italo-disco
+    - italo
+  balearic:
+    - balearic
+    - balearic beat
+  electro:
+    - electro
+    - electro house
+    - electro funk
+    - electroclash
+    - new rave
+  eurodance:
+    - eurodance
+  # --- Pop variants ---
+  dream pop:
+    - dream pop
+  art pop:
+    - art pop
+  bedroom pop:
+    - bedroom pop
+  hyperpop:
+    - hyperpop
+    - bubblegum bass
+  chillwave:
+    - chillwave
+    - glo-fi
+    - indietronica
+  synth pop:
+    - synth pop
+    - synthpop
+    - synth-pop
+  electropop:
+    - electropop
+  indie dance:
+    - indie dance
+    - new rave
+  # --- R&B variants ---
+  neo-soul:
+    - neo-soul
+    - neo soul
+  alternative rnb:
+    - alternative rnb
+    - alternative r&b
+    - alt r&b
+  # --- IDM / experimental ---
+  footwork:
+    - footwork
+    - juke
+  breakcore:
+    - breakcore
+  # --- Reggae / dub ---
+  dub:
+    - dub
+    - dub reggae
+  deconstructed club:
+    - deconstructed club
+
+# ---------------- LAYER 3: PRODUCTION DNA (multi) ----------------
+production_dna:
+  "909":
+    - "909"
+    - tr-909
+    - tr909
+    - roland 909
+  "808":
+    - "808"
+    - tr-808
+    - tr808
+    - roland 808
+    - miami bass
+    - trap
+  "303":
+    - "303"
+    - tb-303
+    - tb303
+    - roland 303
+    - acid
+    - acid house
+    - acid techno
+  analog:
+    - analog
+    - analogue
+    - modular
+    - eurorack
+    - hardware
+  sample-based:
+    - sample-based
+    - sample based
+    - sampled
+    - plunderphonics
+    - beat tape
+    - boom bap
+    - boom-bap
+    - beats
+    - abstract hip hop
+    - abstract hip-hop
+  breakbeat-based:
+    - breakbeat
+    - breaks
+    - amen break
+    - amen
+    - jungle
+    - dnb
+    - drum and bass
+    - footwork
+  synth-driven:
+    - synth
+    - synthwave
+    - synth-pop
+    - synthpop
+    - synth-driven
+    - synthesizer
+    - synth funk
+  live drums:
+    - live drums
+    - live band
+    - live instrumentation
+    - acoustic drums
+  vocal processing:
+    - vocoder
+    - autotune
+    - auto-tune
+    - pitched vocals
+    - chopped vocals
+    - vocal chops
+    - hyperpop
+  vinyl culture:
+    - vinyl
+    - turntablism
+    - scratch
+    - dj tools
+    - dj tool
+
+# ---------------- LAYER 4: RHYTHM ----------------
+rhythm:
+  four-on-the-floor:
+    - four on the floor
+    - four-on-the-floor
+    - 4/4
+    - 4x4
+    - house
+    - techno
+    - disco
+  breakbeat:
+    - breakbeat
+    - breaks
+    - amen
+    - jungle
+    - drum and bass
+    - dnb
+  2-step/shuffle:
+    - 2-step
+    - 2step
+    - 2 step
+    - shuffle
+    - uk garage
+    - garage
+    - swing
+  dembow:
+    - dembow
+    - reggaeton
+    - "reggaetón"
+    - dancehall
+    - ragga
+  halftime:
+    - halftime
+    - half-time
+    - trap
+    - 140
+    - future beats
+    - drill
+  polyrhythmic:
+    - polyrhythm
+    - polyrhythmic
+    - afrobeat
+    - afro house
+    - amapiano
+  syncopated:
+    - syncopated
+    - syncopation
+    - footwork
+    - juke
+    - broken beat
+    - broken-beat
+    - bruk
+
+# ---------------- LAYER 5: TEXTURE (multi) ----------------
+texture:
+  dark:
+    - dark
+    - dark techno
+    - industrial
+    - industrial techno
+    - doom
+    - sinister
+    - black metal
+  warm/soulful:
+    - soulful
+    - warm
+    - soul
+    - deep house
+    - rnb
+    - r&b
+    - neo-soul
+    - neo soul
+    - pop soul
+  raw/gritty:
+    - raw
+    - gritty
+    - lo-fi
+    - lofi
+    - distorted
+    - noisy
+    - noise
+    - punk
+    - hardcore
+  atmospheric:
+    - atmospheric
+    - ambient
+    - ethereal
+    - dreamy
+    - cinematic
+    - dream pop
+    - shoegaze
+    - psychedelic
+    - psychedelic rock
+    - trippy
+    - chillwave
+  euphoric:
+    - euphoric
+    - uplifting
+    - anthemic
+    - festival
+    - hands up
+  melancholic:
+    - melancholic
+    - melancholy
+    - sad
+    - bittersweet
+    - wistful
+    - emo
+  aggressive:
+    - aggressive
+    - hard
+    - hardcore
+    - banger
+    - peak time
+    - peak-time
+    - heavy metal
+    - hard rock
+  groovy/funky:
+    - groovy
+    - funky
+    - funk
+    - groove
+    - disco
+  stripped/minimal:
+    - minimal
+    - stripped
+    - dub techno
+    - microhouse
+
+# ---------------- LAYER 6: LINEAGE (multi) ----------------
+lineage:
+  chicago:
+    - chicago
+    - chicago house
+    - chicago hip hop
+    - illinois
+  detroit:
+    - detroit
+    - detroit techno
+    - detroit house
+  berlin:
+    - berlin
+    - berghain
+    - german techno
+  south london:
+    - south london
+    - croydon
+    - dubstep
+    - uk dubstep
+  london:
+    - london
+    - east london
+    - north london
+    - west london
+  bristol:
+    - bristol
+    - bristol sound
+    - trip-hop
+    - trip hop
+  new york:
+    - new york
+    - nyc
+    - bronx
+    - brooklyn
+    - garage house
+    - new jersey
+    - jersey
+    - jersey club
+  atlanta:
+    - atlanta
+    - georgia
+    - dirty south
+  los angeles:
+    - los angeles
+    - la
+    - california
+  bay area:
+    - bay area
+    - oakland
+    - san francisco
+  miami:
+    - miami
+    - florida
+    - miami bass
+  houston:
+    - houston
+    - texas
+    - chopped and screwed
+    - chopped & screwed
+  philadelphia:
+    - philadelphia
+    - philly
+  pittsburgh:
+    - pittsburgh
+  jamaican/sound system:
+    - jamaica
+    - jamaican
+    - sound system
+    - soundsystem
+    - dub
+    - reggae
+    - dancehall
+  puerto rican:
+    - puerto rico
+    - puerto rican
+    - reggaeton
+    - "reggaetón"
+  dominican:
+    - dominican republic
+    - dominican
+  colombian:
+    - colombia
+    - colombian
+  brazilian:
+    - brazil
+    - brazilian
+    - brasil
+    - baile funk
+    - mpb
+  nigerian:
+    - nigeria
+    - nigerian
+    - lagos
+  africa:
+    - africa
+    - african
+    - south africa
+    - amapiano
+    - afrobeats
+    - afrobeat
+  japanese:
+    - japan
+    - japanese
+    - tokyo
+    - j-pop
+    - city pop
+  korean:
+    - korea
+    - korean
+    - k-pop
+    - seoul
+  "60s":
+    - 60s
+    - "1960s"
+    - sixties
+    - oldies
+  "70s":
+    - 70s
+    - "1970s"
+    - seventies
+  "80s":
+    - 80s
+    - "1980s"
+    - eighties
+    - new wave
+  "90s":
+    - 90s
+    - "1990s"
+    - nineties
+  "00s":
+    - 00s
+    - "2000s"
+    - noughties
+  "10s":
+    - 10s
+    - "2010s"
+  "20s":
+    - 20s
+    - "2020s"

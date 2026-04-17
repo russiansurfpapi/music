@@ -22,6 +22,13 @@ ENV/
 # OS
 .DS_Store
 .cache
+.cache-*
+library.db
+library.db-journal
+library.db-shm
+library.db-wal
+unmapped_tags.log
+lastfm_run.log
 
 # Project specific
 downloads/

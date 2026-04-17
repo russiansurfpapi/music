@@ -1,0 +1,912 @@
+# DJ Vocabulary Glossary
+# A curated reference for hearing and talking about dance/electronic music with precision.
+# Sources are cited per-entry; see dj_glossary.md for prose summaries.
+
+subgenres:
+
+  # ============ HOUSE FAMILY ============
+
+  chicago_house:
+    name: "Chicago House"
+    parent: "House"
+    origin: "Chicago, 1984-1987"
+    key_producers: ["Frankie Knuckles", "Ron Hardy", "Marshall Jefferson", "Larry Heard", "Jesse Saunders"]
+    sonic_markers:
+      - "Roland TR-909 / TR-707 four-on-the-floor kick"
+      - "Open hi-hat on the off-beat (the 'tss' between kicks)"
+      - "Sparse piano stabs or disco-sample loops"
+      - "Raw, often clipping mixdowns — reflects warehouse DJ culture"
+    distinguishing_from:
+      - canonical: "acid_house"
+        difference: "Chicago house is 909/707-driven; acid house centers the Roland TB-303's squelch."
+      - canonical: "deep_house"
+        difference: "Chicago house is rawer, more percussive; deep house adds jazz chords and emotional pads."
+    sources:
+      - "https://en.wikipedia.org/wiki/House_music"
+      - "https://deephouse.fm/the-complete-house-music-subgenre-glossary/"
+
+  acid_house:
+    name: "Acid House"
+    parent: "House"
+    origin: "Chicago, 1986 (Phuture's 'Acid Tracks')"
+    key_producers: ["Phuture", "DJ Pierre", "Sleezy D", "Armando"]
+    sonic_markers:
+      - "Roland TB-303 bassline with resonance/cutoff automation ('squelch')"
+      - "Slower than techno — usually 115-125 BPM"
+      - "Repetitive 16th-note basslines that mutate across 16-32 bars"
+      - "Retains house swing and soul"
+    distinguishing_from:
+      - canonical: "acid_techno"
+        difference: "House retains 4/4 groove and human feel; acid techno is faster (135-150+ BPM), darker, stripped to machine coldness."
+    sources:
+      - "https://en.wikipedia.org/wiki/Acid_house"
+      - "https://youtubemusicsucks.com/acid-house-vs-techno-music/"
+
+  deep_house:
+    name: "Deep House"
+    parent: "House"
+    origin: "Chicago, mid-1980s (Larry Heard lineage)"
+    key_producers: ["Larry Heard / Mr. Fingers", "Kerri Chandler", "Moodymann", "Theo Parrish"]
+    sonic_markers:
+      - "110-125 BPM, unhurried tempo"
+      - "Extended jazz chords (7ths, 9ths, sus), soft Rhodes/DX7 pads"
+      - "Muted, rounded basslines"
+      - "Spacious percussion, shakers, soulful vocal fragments"
+    distinguishing_from:
+      - canonical: "deep_tech"
+        difference: "Deep house descends from Larry Heard — chordal, jazzy, emotional. Modern 'deep tech' uses the 'deep' label but is stripped-down, percussion-first, minor-key, often closer to tech house."
+      - canonical: "tech_house"
+        difference: "Deep house is soulful/atmospheric; tech house is mechanical and beat-focused."
+    sources:
+      - "https://thissongissick.com/post/dance-music-history-101-larry-heard/"
+      - "https://mixmag.net/feature/humble-hero-house-pioneer-larry-heard-is-the-house-pioneer-best-left-unsolved"
+      - "https://en.wikipedia.org/wiki/Deep_house"
+
+  tech_house:
+    name: "Tech House"
+    parent: "House"
+    origin: "UK, late 1990s"
+    key_producers: ["Mr. C", "Terry Francis", "Nathan Coles", "later: Hot Creations, Jamie Jones"]
+    sonic_markers:
+      - "125-128 BPM groove-first kick pattern"
+      - "Dry, tight percussion (closed hats, rimshots, bongos)"
+      - "Stripped arrangements, minimal melody"
+      - "Bassline locked tight with kick — pumped, rolling"
+    distinguishing_from:
+      - canonical: "minimal_techno"
+        difference: "Tech house retains house swing and groove-centric feel; minimal techno is colder, middle-frequency focused, and follows techno's linear/hypnotic logic."
+      - canonical: "microhouse"
+        difference: "Microhouse replaces conventional drum hits with clicks/glitches/static; tech house uses normal house percussion palette."
+    sources:
+      - "https://en.wikipedia.org/wiki/Tech_house"
+      - "https://www.quora.com/What-s-the-difference-between-all-the-different-electronic-music-types-techno-house-tech-house-minimal-etc-How-can-you-determine-what-is-what"
+
+  microhouse:
+    name: "Microhouse"
+    parent: "House"
+    origin: "Germany, early 2000s (Kompakt, Perlon)"
+    key_producers: ["Matthew Herbert", "Ricardo Villalobos", "Akufen", "Luomo"]
+    sonic_markers:
+      - "Replaces house kick/hats with clicks, static, vinyl crackle, glitch bits"
+      - "Often 120-125 BPM, long tracks (8-12 min)"
+      - "Tiny chopped vocal samples, granular textures"
+      - "Funky/swung beneath the glitches — still groove music"
+    distinguishing_from:
+      - canonical: "minimal_techno"
+        difference: "Microhouse is funkier and more glitch-oriented; minimal techno is colder, more about rhythm/repetition."
+    sources:
+      - "https://en.wikipedia.org/wiki/Microhouse"
+      - "https://www.samplesoundmusic.com/blogs/news/the-history-of-minimal-tech-from-microhouse-to-now"
+
+  afro_house:
+    name: "Afro House"
+    parent: "House"
+    origin: "South Africa, 1990s"
+    key_producers: ["Black Coffee", "Culoe De Song", "Da Capo", "Caiiro"]
+    sonic_markers:
+      - "120-125 BPM, deep sustained basslines"
+      - "Log-drum and marimba-like percussion, polyrhythmic layers"
+      - "Vocal melodies drawing on Zulu, Xhosa, kwaito traditions"
+      - "Wide reverb tails, atmospheric pads"
+    distinguishing_from:
+      - canonical: "amapiano"
+        difference: "Both South African — but amapiano is slower (112-115 BPM), log-drum is lead melodic instrument, jazz-influenced keys, and has a lounging feel vs afro house's 4/4 drive."
+    sources:
+      - "https://ra.co/features/4440"
+      - "https://en.wikipedia.org/wiki/Afro_house"
+
+  amapiano:
+    name: "Amapiano"
+    parent: "House"
+    origin: "South Africa (Gauteng), mid-2010s"
+    key_producers: ["Kabza De Small", "DJ Maphorisa", "MFR Souls", "Focalistic"]
+    sonic_markers:
+      - "112-115 BPM — noticeably slower than house"
+      - "Log drum bass (pitched percussion as lead bass)"
+      - "Jazzy piano/Rhodes chords and slow vocal phrases"
+      - "Shakers and hi-hats with heavy swing"
+    distinguishing_from:
+      - canonical: "afrobeats"
+        difference: "Amapiano is South African house-descended and instrumental-groove focused; Afrobeats is West African (Nigeria/Ghana), pop-song-structured with vocal-lead."
+    sources:
+      - "https://afroplug.com/amapiano-vs-afrobeats-understanding-the-difference/"
+      - "https://ra.co/features/4322"
+
+  gqom:
+    name: "Gqom"
+    parent: "House"
+    origin: "Durban, South Africa, early 2010s"
+    key_producers: ["DJ Lag", "Rudeboyz", "Citizen Boy", "Griffit Vigo"]
+    sonic_markers:
+      - "Dark, minimalist — no melody, almost no chords"
+      - "Broken/halftime rhythm rather than 4/4"
+      - "Drone-like bass swells, eerie processed vocal chants"
+      - "Sparse, hammering kicks with negative space"
+    distinguishing_from:
+      - canonical: "afro_house"
+        difference: "Gqom is dark, broken-rhythm, minimal; afro house is melodic, 4/4, polished."
+    sources:
+      - "https://en.wikipedia.org/wiki/Gqom"
+      - "https://daily.bandcamp.com/scene-report/gqom-club-sound-label-profile"
+
+  # ============ TECHNO FAMILY ============
+
+  detroit_techno:
+    name: "Detroit Techno"
+    parent: "Techno"
+    origin: "Detroit, 1985-1988"
+    key_producers: ["Juan Atkins", "Derrick May", "Kevin Saunderson", "Jeff Mills", "Carl Craig"]
+    sonic_markers:
+      - "125-135 BPM, machine-precise grid"
+      - "Futurist synths — Motown melody sensibility over 808/909 drums"
+      - "Strings, arpeggios, soulful melodic content despite robotic base"
+    distinguishing_from:
+      - canonical: "berlin_techno"
+        difference: "Detroit is warmer, more soulful and melodic; Berlin (post-Hard Wax/Tresor) is colder, more industrial and functional."
+    sources:
+      - "https://en.wikipedia.org/wiki/Techno"
+      - "https://www.viberate.com/blog/music-analytics/types-of-techno-music-the-ultimate-guide-to-subgenres/"
+
+  minimal_techno:
+    name: "Minimal Techno"
+    parent: "Techno"
+    origin: "Detroit/Berlin, 1990s (Robert Hood, Plastikman)"
+    key_producers: ["Robert Hood", "Richie Hawtin / Plastikman", "Daniel Bell"]
+    sonic_markers:
+      - "Stripped palette — often 3-5 sounds for entire track"
+      - "Mid-frequency focus, not deep bass"
+      - "Repetition with minute variation across 10+ minutes"
+      - "Linear progression — rarely breakdowns in classic sense"
+    distinguishing_from:
+      - canonical: "microhouse"
+        difference: "Minimal techno focuses on repetition and mid-frequencies; microhouse is more afrocentric/funky with glitch-percussion replacements."
+    sources:
+      - "https://en.wikipedia.org/wiki/Minimal_techno"
+
+  dub_techno:
+    name: "Dub Techno"
+    parent: "Techno"
+    origin: "Berlin, 1993 (Basic Channel)"
+    key_producers: ["Basic Channel (Moritz von Oswald + Mark Ernestus)", "Rhythm & Sound", "Chain Reaction artists (Porter Ricks, Vainqueur)"]
+    sonic_markers:
+      - "Deep, cavernous reverb and long delay feedback on chord stabs"
+      - "Slow-evolving, 'thawing ice' atmospherics"
+      - "Muffled, underwater timbres; heavy low-mid"
+      - "Dub-reggae influence on space and restraint"
+    distinguishing_from:
+      - canonical: "minimal_techno"
+        difference: "Dub techno is atmosphere-first and reverb-drenched; minimal techno is dry and rhythm-first."
+    sources:
+      - "https://en.wikipedia.org/wiki/Dub_techno"
+      - "https://en.wikipedia.org/wiki/Basic_Channel"
+      - "https://ra.co/features/3365"
+
+  peak_time_techno:
+    name: "Peak Time Techno"
+    parent: "Techno"
+    origin: "Berlin/Europe, 2010s (as a Beatport category and club sound)"
+    key_producers: ["Adam Beyer", "Charlotte de Witte", "Amelie Lens"]
+    sonic_markers:
+      - "130-138 BPM, big-room dynamics"
+      - "Long rolling grooves, extended tension-build-release structures"
+      - "Driving but not harsh — designed for the biggest moment of night"
+    distinguishing_from:
+      - canonical: "hard_techno"
+        difference: "Peak time is 130-138 BPM and rolling; hard techno is 140-160+ BPM and abrasive."
+    sources:
+      - "https://www.theacidmind.com/2025/01/the-top-djs-in-peak-time-raw-hypnotic-hard-techno/"
+
+  hard_techno:
+    name: "Hard Techno"
+    parent: "Techno"
+    origin: "Europe, 1990s (revived 2020s)"
+    key_producers: ["Sara Landry", "SPFDJ", "I Hate Models", "Héctor Oaks"]
+    sonic_markers:
+      - "140-160+ BPM, distorted kick (often '909 into saturator')"
+      - "Screaming leads, siren-like FX, aggressive stabs"
+      - "Short loops, rapid-fire drops"
+    sources:
+      - "https://www.theacidmind.com/2025/01/the-top-djs-in-peak-time-raw-hypnotic-hard-techno/"
+      - "https://www.viberate.com/blog/music-analytics/types-of-techno-music-the-ultimate-guide-to-subgenres/"
+
+  industrial_techno:
+    name: "Industrial Techno"
+    parent: "Techno"
+    origin: "Berlin/UK, 2010s revival"
+    key_producers: ["Perc", "Ancient Methods", "Blawan", "Paula Temple"]
+    sonic_markers:
+      - "Heavily distorted kicks, metallic clangs, feedback walls"
+      - "Abrasive mid-range, tape-hiss textures"
+      - "130-140 BPM, warehouse-ready weight"
+    distinguishing_from:
+      - canonical: "hard_techno"
+        difference: "Industrial is about texture and dread (mid/high noise layers); hard techno is about speed and kick punishment."
+    sources:
+      - "https://www.samplesoundmusic.com/blogs/news/techno-explained-styles-sounds-and-subgenres-you-should-know"
+
+  acid_techno:
+    name: "Acid Techno"
+    parent: "Techno"
+    origin: "London/Europe, mid-1990s (Stay Up Forever)"
+    key_producers: ["Chris Liberator", "D.A.V.E. The Drummer", "Luke Slater"]
+    sonic_markers:
+      - "135-150 BPM — significantly faster than acid house"
+      - "TB-303 lines layered aggressively, often distorted"
+      - "Cold, machine-like — strips away the soul of acid house"
+    sources:
+      - "https://youtubemusicsucks.com/acid-house-vs-techno-music/"
+
+  # ============ BASS / UK CONTINUUM ============
+
+  uk_garage:
+    name: "UK Garage (UKG)"
+    parent: "Bass/UK"
+    origin: "London, mid-1990s"
+    key_producers: ["Todd Edwards", "MJ Cole", "Artful Dodger", "Zed Bias"]
+    sonic_markers:
+      - "130-135 BPM shuffled swing"
+      - "R&B vocals, chopped and re-pitched"
+      - "Rolling sub-bass, skippy hi-hats"
+    distinguishing_from:
+      - canonical: "speed_garage"
+        difference: "Speed garage retains 4/4 kick and reese/wobbly bass; UKG (esp 2-step) removes kicks 2 and 4."
+    sources:
+      - "https://en.wikipedia.org/wiki/UK_garage"
+
+  two_step:
+    name: "2-Step Garage"
+    parent: "Bass/UK"
+    origin: "London, late 1990s"
+    key_producers: ["MJ Cole", "Wookie", "Steve Gurley"]
+    sonic_markers:
+      - "Broken kick pattern — removes beats 2 and 4 from 4/4"
+      - "Skippy, syncopated hats and snares"
+      - "R&B-styled vocals, lush chord stabs"
+    distinguishing_from:
+      - canonical: "uk_garage"
+        difference: "2-step is a subset of UKG defined by its broken kick; other UKG retains 4/4."
+    sources:
+      - "https://en.wikipedia.org/wiki/2-step_garage"
+
+  speed_garage:
+    name: "Speed Garage"
+    parent: "Bass/UK"
+    origin: "London, 1997"
+    key_producers: ["Double 99", "Armand Van Helden (UK impact)", "Tuff Jam"]
+    sonic_markers:
+      - "130 BPM with warped, heavy reese basslines from jungle"
+      - "Time-stretched vocals"
+      - "4/4 kick retained"
+    sources:
+      - "https://en.wikipedia.org/wiki/UK_garage"
+
+  dubstep_original:
+    name: "Dubstep (original / 140)"
+    parent: "Bass/UK"
+    origin: "South London (Croydon, FWD>> club), early 2000s"
+    key_producers: ["Mala", "Coki", "Skream", "Benga", "Kode9", "Loefah"]
+    sonic_markers:
+      - "140 BPM, halftime feel (snare on 3)"
+      - "Sub-bass weight — felt more than heard"
+      - "Sparse arrangement, dub-influenced space and reverb"
+      - "Syncopated, broken rhythms — not 'drops'"
+    distinguishing_from:
+      - canonical: "brostep"
+        difference: "Original dubstep emphasizes sub-bass and weight; brostep accentuates mid-range with 'robotic/metal-esque' screaming basses for festival crowds (Skrillex, Rusko)."
+    sources:
+      - "https://en.wikipedia.org/wiki/Dubstep"
+      - "https://www.vipzone-samples.com/en/brostep-vs-dubstep/"
+
+  brostep:
+    name: "Brostep"
+    parent: "Bass/UK"
+    origin: "US/UK, late 2000s"
+    key_producers: ["Skrillex", "Rusko (partly)", "Excision"]
+    sonic_markers:
+      - "Mid-range 'growl' basses, aggressive FM/wavetable screaming"
+      - "Cleaner, more compressed production for festival PAs"
+      - "Big obvious drops at 140 BPM halftime"
+    sources:
+      - "https://en.wikipedia.org/wiki/Dubstep"
+
+  grime:
+    name: "Grime"
+    parent: "Bass/UK"
+    origin: "East London, early 2000s"
+    key_producers: ["Wiley", "Dizzee Rascal", "Ruff Sqwad", "Dot Rotten"]
+    sonic_markers:
+      - "140 BPM, often 2-step/broken drum underneath"
+      - "Detuned square/triangle lead synths ('Eskibeat' timbres)"
+      - "Glassy pads, plinky pentatonic melodies, metallic hits"
+      - "MC-first — beats designed to leave vocal space"
+    distinguishing_from:
+      - canonical: "dubstep_original"
+        difference: "Same 140 BPM tempo and South-London lineage — but grime foregrounds MCs and uses digital/plinky synth timbres; dubstep foregrounds sub-bass and instrumental space."
+    sources:
+      - "https://en.wikipedia.org/wiki/Grime_music"
+      - "https://en.wikipedia.org/wiki/Eskimo_(grime_beat)"
+      - "https://www.complex.com/music/a/son-raw/a-journey-through-wiley-eskibeat"
+
+  jungle:
+    name: "Jungle"
+    parent: "Bass/UK"
+    origin: "UK, early 1990s"
+    key_producers: ["Goldie", "Shy FX", "Remarc", "LTJ Bukem"]
+    sonic_markers:
+      - "160-170 BPM with chopped 'Amen' break breakbeats"
+      - "Ragga/dancehall vocal samples"
+      - "Deep reggae-influenced sub-basslines"
+    distinguishing_from:
+      - canonical: "drum_and_bass_liquid"
+        difference: "Jungle is raw breakbeat-chopping and reggae-derived; liquid DnB is smoothed out, jazzy chords, vocal hooks."
+    sources:
+      - "https://en.wikipedia.org/wiki/Drum_and_bass"
+
+  drum_and_bass_liquid:
+    name: "Liquid Drum & Bass"
+    parent: "Bass/UK"
+    origin: "UK, early 2000s"
+    key_producers: ["Calibre", "High Contrast", "LTJ Bukem"]
+    sonic_markers:
+      - "174 BPM, smooth rolling basslines"
+      - "Jazz/soul chords, vocal hooks"
+      - "Cleaner drum edits than jungle"
+    sources:
+      - "https://drumandbassuk.com/news/article/drum-and-bass-subgenres-explained"
+
+  neurofunk:
+    name: "Neurofunk"
+    parent: "Bass/UK"
+    origin: "UK, late 1990s"
+    key_producers: ["Ed Rush & Optical", "Noisia", "Black Sun Empire"]
+    sonic_markers:
+      - "174 BPM, meticulously designed 'reese' basses that morph"
+      - "Glitchy precision percussion"
+      - "Dystopian, sci-fi atmospheres"
+    sources:
+      - "https://drumandbassuk.com/news/article/drum-and-bass-subgenres-explained"
+
+  jump_up:
+    name: "Jump-Up DnB"
+    parent: "Bass/UK"
+    origin: "UK, mid-1990s"
+    key_producers: ["DJ Hazard", "Hype", "Original Sin"]
+    sonic_markers:
+      - "Bouncy cartoonish basslines ('foghorn' honks)"
+      - "Punchy simple drops, crowd-service"
+    sources:
+      - "https://drumandbassuk.com/news/article/drum-and-bass-subgenres-explained"
+
+  footwork:
+    name: "Footwork / Juke"
+    parent: "Bass/US"
+    origin: "Chicago, 2000s (from ghetto house/juke)"
+    key_producers: ["DJ Rashad", "DJ Spinn", "RP Boo", "Traxman", "Jana Rush"]
+    sonic_markers:
+      - "160 BPM, but triplet/syncopated feel — not 4/4"
+      - "Chopped vocal samples (stutter-repeated phrases)"
+      - "Sparse, abstract drum machine patterns (808 kicks)"
+      - "Tracks built as abstract loops for dance battles"
+    sources:
+      - "https://daily.bandcamp.com/lists/footwork-chicago-list"
+      - "https://en.wikipedia.org/wiki/Footwork_(genre)"
+
+  baltimore_club:
+    name: "Baltimore Club (B'more)"
+    parent: "Bass/US"
+    origin: "Baltimore, early 1990s"
+    key_producers: ["Frank Ski", "Rod Lee", "DJ Technics", "DJ Class"]
+    sonic_markers:
+      - "~130 BPM, 8/4 beat structure"
+      - "Looped vocal snippets (often pop/rap acapellas)"
+      - "Breakbeat underneath the 4/4 kick"
+      - "Sample-heavy, irreverent (e.g. SpongeBob theme)"
+    sources:
+      - "https://en.wikipedia.org/wiki/Baltimore_club"
+      - "https://ra.co/features/4252"
+
+  jersey_club:
+    name: "Jersey Club"
+    parent: "Bass/US"
+    origin: "Newark, NJ, 2000s"
+    key_producers: ["DJ Tameil", "DJ Sliink", "UNIIQU3"]
+    sonic_markers:
+      - "Triplet kick pattern (5-stroke bed squeak pattern)"
+      - "Cut-up samples of contemporary hip-hop/R&B vocals"
+      - "Smoother and less raw than Baltimore club"
+    distinguishing_from:
+      - canonical: "baltimore_club"
+        difference: "Jersey smoothed B'more's rawness, uses triplet kicks and more hip-hop-era samples."
+    sources:
+      - "https://www.vice.com/en/article/you-think-you-know-but-you-have-no-idea-the-difference-between-baltimore-philly-and-jersey-club-2/"
+
+  ballroom:
+    name: "Ballroom"
+    parent: "Bass/US"
+    origin: "New York (queer Black/Latino ballroom scene)"
+    key_producers: ["MikeQ", "Kevin Aviance"]
+    sonic_markers:
+      - "Samples 'The Ha Dance' (MAW) — signature crash for the 'dip'"
+      - "Acid-flavored synth lines, chants"
+      - "Live commentator/chanting common in sets"
+    sources:
+      - "https://www.vice.com/en/article/you-think-you-know-but-you-have-no-idea-the-difference-between-baltimore-philly-and-jersey-club-2/"
+
+  # ============ ELECTRO / IDM ============
+
+  electro:
+    name: "Electro (Detroit/Miami lineage)"
+    parent: "Electro"
+    origin: "NY/Detroit/Miami, early 1980s"
+    key_producers: ["Afrika Bambaataa", "Juan Atkins (Cybotron)", "Drexciya", "Dopplereffekt", "Aux 88"]
+    sonic_markers:
+      - "Syncopated TR-808 pattern (NOT 4/4) — the defining element"
+      - "Robotic vocoders, sci-fi synths"
+      - "120-130 BPM, machine-precise"
+    distinguishing_from:
+      - canonical: "electroclash"
+        difference: "Electroclash is late-90s/early-2000s European revival with punk/new-wave vocals; true electro is Black American, rooted in Kraftwerk + funk lineage."
+    sources:
+      - "https://xlr8r.com/features/electro-everlasting/"
+      - "https://daily.bandcamp.com/lists/drexciya-album-guide"
+
+  idm:
+    name: "IDM (Intelligent Dance Music)"
+    parent: "Electronic/Experimental"
+    origin: "UK, early 1990s (Warp 'Artificial Intelligence' series)"
+    key_producers: ["Aphex Twin", "Autechre", "Squarepusher", "Boards of Canada"]
+    sonic_markers:
+      - "Irregular/chopped breakbeats, polyrhythms"
+      - "Complex synthesis, generative/algorithmic elements"
+      - "Often non-dancefloor tempos, home-listening-oriented"
+    sources:
+      - "https://en.wikipedia.org/wiki/Intelligent_dance_music"
+
+  ambient_techno:
+    name: "Ambient Techno"
+    parent: "Electronic/Experimental"
+    origin: "UK, early 1990s"
+    key_producers: ["Aphex Twin (SAW 85-92)", "The Black Dog", "Biosphere", "The Orb"]
+    sonic_markers:
+      - "Slow tempos or tempo-less beds"
+      - "Techno rhythmic DNA dissolved into atmospheric pads"
+      - "Long-form, album-oriented"
+    sources:
+      - "https://en.wikipedia.org/wiki/Ambient_techno"
+
+  # ============ TRANCE ============
+
+  progressive_house:
+    name: "Progressive House"
+    parent: "House"
+    origin: "UK, early 1990s"
+    key_producers: ["Sasha", "John Digweed", "early Guy J"]
+    sonic_markers:
+      - "125-132 BPM, long 10+ min builds"
+      - "Melodic lead synths, arpeggios over rolling bass"
+      - "Few or no vocal hooks — narrative through arrangement"
+    sources:
+      - "https://www.insomniac.com/magazine/10-trance-subgenres-you-need-to-know/"
+
+  goa_trance:
+    name: "Goa Trance"
+    parent: "Trance"
+    origin: "Goa, India, early 1990s"
+    key_producers: ["Astral Projection", "Juno Reactor", "Hallucinogen"]
+    sonic_markers:
+      - "130-150 BPM"
+      - "Layered eastern scales, long evolving arpeggios"
+      - "Analog/early digital synth timbres, warm reverbs"
+      - "Hippie spiritual aesthetic"
+    distinguishing_from:
+      - canonical: "psytrance"
+        difference: "Goa is warmer, more melodic, longer evolving lines; psytrance is cleaner/compressed, sharper stabs, texture-driven, club-system-tuned."
+    sources:
+      - "https://psychedelicisland.com/articles/goa-trance-or-psytrance/"
+
+  psytrance:
+    name: "Psytrance"
+    parent: "Trance"
+    origin: "International, mid-1990s"
+    key_producers: ["Infected Mushroom", "1200 Micrograms", "Shpongle"]
+    sonic_markers:
+      - "Full-on: 138-148 BPM; darkpsy: 150-180+"
+      - "Rolling 16th-note bass pattern locked to kick"
+      - "Filter-automated stabs, heavy modulation"
+    sources:
+      - "https://en.wikipedia.org/wiki/Psychedelic_trance"
+
+  # ============ DISCO LINEAGE ============
+
+  italo_disco:
+    name: "Italo Disco"
+    parent: "Disco"
+    origin: "Italy, early 1980s"
+    key_producers: ["Giorgio Moroder (precursor)", "Mr. Flagio", "Gazebo", "Kano"]
+    sonic_markers:
+      - "Drum machines, synth basslines (not live bass like US disco)"
+      - "Vocoder vocals, simple catchy hooks"
+      - "Often sung in accented/broken English"
+    sources:
+      - "https://en.wikipedia.org/wiki/Italo_disco"
+      - "https://www.vice.com/en/article/a-bullshitter39s-guide-to-italo-disco-us-translation/"
+
+  cosmic_disco:
+    name: "Cosmic / Space Disco"
+    parent: "Disco"
+    origin: "Italy (Baia degli Angeli club), late 1970s"
+    key_producers: ["Daniele Baldelli", "Beppe Loda"]
+    sonic_markers:
+      - "Slow-to-mid tempos, pitched DOWN by DJs (often to ~100-110 BPM)"
+      - "Spacey synths, African/world-music samples"
+      - "Hybrid DJ style — disco + electronic + exotica"
+    sources:
+      - "https://www.growingbinrecords.com/disco-cosmic-italo/"
+
+  balearic:
+    name: "Balearic Beat"
+    parent: "Disco"
+    origin: "Ibiza (Amnesia, DJ Alfredo), mid-1980s"
+    key_producers: ["DJ Alfredo", "later: Aeroplane, DJ Harvey"]
+    sonic_markers:
+      - "Genre-agnostic — rock, pop, Afrobeat, new wave all blended"
+      - "Sunset/open-air emotional peaks"
+      - "Mid-tempo (100-118 BPM), feel-based not tempo-based"
+    sources:
+      - "https://en.wikipedia.org/wiki/Nu-disco"
+
+  nu_disco:
+    name: "Nu-Disco"
+    parent: "Disco"
+    origin: "Europe, 2000s"
+    key_producers: ["Lindstrøm", "Todd Terje", "Prins Thomas"]
+    sonic_markers:
+      - "Live-sounding basslines, analog synths"
+      - "115-125 BPM — dancefloor-focused but retains disco swing"
+      - "Extended jam-structured tracks"
+    sources:
+      - "https://en.wikipedia.org/wiki/Nu-disco"
+
+  # ============ LATIN / REGGAETON ============
+
+  reggaeton:
+    name: "Reggaeton"
+    parent: "Latin"
+    origin: "Panama (late 80s) / Puerto Rico (90s popularization)"
+    key_producers: ["DJ Playero", "Luny Tunes", "Tainy"]
+    sonic_markers:
+      - "Dembow riddim (3+3+2 tresillo pattern over 4/4 kick) — the defining beat"
+      - "~90-96 BPM (feels double-time)"
+      - "Spanish-language rap/melodic vocals"
+    distinguishing_from:
+      - canonical: "dembow_dominican"
+        difference: "Reggaeton is slower, melody/rap-based; Dominican dembow is faster (120-130 BPM), rawer, chant-heavy."
+    sources:
+      - "https://en.wikipedia.org/wiki/Reggaeton"
+      - "https://daily.redbullmusicacademy.com/2013/07/dembow-a-loop-history/"
+      - "https://www.berklee.edu/berklee-now/news/what-is-dembow-tracing-the-roots-of-a-global-phenomenon"
+
+  dembow_dominican:
+    name: "Dembow (Dominican)"
+    parent: "Latin"
+    origin: "Dominican Republic, 2000s"
+    key_producers: ["El Alfa", "Tokischa"]
+    sonic_markers:
+      - "120-130 BPM — faster than reggaeton"
+      - "Raw, looping dembow riddim, often just drums + chant"
+      - "Call-and-response vocal hooks"
+    sources:
+      - "https://en.wikipedia.org/wiki/Dembow_beat"
+
+  funk_carioca:
+    name: "Funk Carioca / Baile Funk"
+    parent: "Latin"
+    origin: "Rio de Janeiro favelas, 1990s-"
+    key_producers: ["DJ Marlboro", "Rennan da Penha", "DJ Polyvox"]
+    sonic_markers:
+      - "Classic: 130 BPM tamborzão kick pattern"
+      - "Newer '150 BPM funk': sped-up tamborzão, pounding sub-kicks"
+      - "Shouty MC tags, sirens, minimal loops"
+    sources:
+      - "https://en.wikipedia.org/wiki/Funk_carioca"
+      - "https://daily.bandcamp.com/lists/the-manic-joyous-sound-of-brazils-funk-carioca"
+
+  # ============ AFROBEATS ============
+
+  afrobeats:
+    name: "Afrobeats"
+    parent: "African Pop"
+    origin: "Nigeria/Ghana, 2000s-2010s"
+    key_producers: ["Sarz", "Pheelz", "P2J"]
+    sonic_markers:
+      - "100-115 BPM, triplet/swing feel"
+      - "Log drum or synth bass, hand percussion (shekere, talking drum)"
+      - "Pop song-form (verse/chorus) with melodic hooks"
+    distinguishing_from:
+      - canonical: "amapiano"
+        difference: "Afrobeats is West African pop-song-based with full vocal hooks; amapiano is South African house-descended with log-drum-lead instrumentals."
+    sources:
+      - "https://en.wikipedia.org/wiki/Afrobeats"
+      - "https://afroplug.com/amapiano-vs-afrobeats-understanding-the-difference/"
+
+  # ============ HIP-HOP ============
+
+  boom_bap:
+    name: "Boom Bap"
+    parent: "Hip-Hop"
+    origin: "East Coast US, late 1980s-mid 1990s"
+    key_producers: ["DJ Premier", "Pete Rock", "Large Professor"]
+    sonic_markers:
+      - "Heavy kick ('boom') + crisp snare ('bap') at 85-95 BPM"
+      - "Jazz/soul sample loops, vinyl grit"
+      - "MPC-swung drums, head-nod tempo"
+      - "Lyrics-forward — vocals sit high in mix"
+    sources:
+      - "https://www.grammy.com/news/11-subgenres-of-hip-hop-jersey-club-drill-trap-examples-videos"
+
+  trap:
+    name: "Trap"
+    parent: "Hip-Hop"
+    origin: "Atlanta, early 2000s"
+    key_producers: ["Shawty Redd", "Zaytoven", "Lex Luger", "Metro Boomin"]
+    sonic_markers:
+      - "130-170 BPM (halftime feel — snare on beat 3)"
+      - "Rolling TR-808 sub-bass (pitched, long decay)"
+      - "Rapid hi-hat triplets and rolls"
+      - "Sparse minor-key melodic loops"
+    distinguishing_from:
+      - canonical: "drill"
+        difference: "Trap has rhythmically rigid snare on beat 3; drill uses skippy syncopated hi-hats 'echoing machine gun fire' and sliding 808s."
+    sources:
+      - "https://en.wikipedia.org/wiki/Trap_music"
+      - "https://www.npr.org/2023/08/10/1193297765/the-birth-of-trap-music-and-the-rise-of-southern-hip-hop"
+
+  drill:
+    name: "Drill (Chicago / UK / NY)"
+    parent: "Hip-Hop"
+    origin: "Chicago, early 2010s; UK drill, 2012+; Brooklyn drill, late 2010s"
+    key_producers: ["Young Chop (Chicago)", "808Melo (UK/NY)"]
+    sonic_markers:
+      - "Chicago: slow dark trap descendant, 60-70 BPM feel"
+      - "UK/NY: sliding 808s, skippy syncopated hi-hats"
+      - "Minor-key strings/bells, cold atmosphere"
+    sources:
+      - "https://en.wikipedia.org/wiki/Drill_music"
+      - "https://www.masterclass.com/articles/drill-music-guide"
+
+  cloud_rap:
+    name: "Cloud Rap"
+    parent: "Hip-Hop"
+    origin: "US, ~2010 (Lil B-era)"
+    key_producers: ["Clams Casino", "Friendzone"]
+    sonic_markers:
+      - "Hazy, reverb-drenched sample beds (often chopped female vocal)"
+      - "Slow, floating 808s"
+      - "Introspective/medicated mood"
+    sources:
+      - "https://www.redbull.com/ca-en/different-types-of-hip-hop-guide"
+
+# ========================================================================
+# TRACK STRUCTURE
+# ========================================================================
+
+track_structure:
+
+  intro:
+    aka: ["mix-in", "opening bars", "DJ intro"]
+    typical_length: "16-32 bars (32-64 beats)"
+    description: >
+      The opening section of a dance track, usually stripped to kick + hats or a looped
+      percussive element. Designed so a DJ can overlay it on an outgoing track's outro
+      without melodic/harmonic clashes.
+    dj_use: >
+      DJ cues incoming track here and rides it under the outgoing track. 'Mixing in on
+      the drums' — you have a blank canvas to blend, swap EQs, and let the crowd absorb
+      the new kick before the main elements hit.
+    sources:
+      - "https://mixedinkey.com/captain-plugins/wiki/how-to-arrange-a-dance-music-track/"
+      - "https://www.attackmagazine.com/"
+
+  groove:
+    aka: ["main body", "verse section", "loop"]
+    typical_length: "16-32 bars at a time"
+    description: >
+      The core section where the track's full groove plays — kick, bass, hats, main
+      percussive/melodic hook all in. Most 'hearing the track' happens here.
+    dj_use: "Hold here while the mix settles; use for EQ-trading."
+
+  first_break:
+    aka: ["first breakdown", "drop-out"]
+    typical_length: "8-16 bars"
+    description: >
+      A strategic dropout — the first time key elements (often the kick) vanish. Creates
+      a moment of tension/release and a mix-out window.
+    dj_use: >
+      Prime opportunity to mix out the outgoing track — as the kick drops out, the
+      incoming kick becomes the sole rhythmic anchor. 'The bit where the kick drops out.'
+
+  build_up:
+    aka: ["build", "tension", "riser section"]
+    typical_length: "8-16 bars"
+    description: >
+      Elements layered back in, often with rising noise sweeps, snare rolls, filter
+      opens. Energy climbs toward the drop.
+
+  drop:
+    aka: ["main drop", "the hit"]
+    typical_length: "16-32 bars"
+    description: >
+      Full-energy section with all elements at peak density, often after a build. In
+      EDM, this is the most-hyped moment; in techno/house, drops are subtler (reentry of
+      kick rather than EDM-style pyrotechnics).
+
+  breakdown:
+    aka: ["bridge", "middle-8 (pop)"]
+    typical_length: "16-32 bars"
+    description: >
+      A second, deeper dropout mid-track. Often purely atmospheric — pads, vocal chops,
+      no drums. In techno this becomes a 'middle-break' meant to hypnotize; in pop/disco
+      it functions as a traditional middle-8 before the final chorus.
+    dj_use: "Fallback mix-out point if the first break was missed."
+
+  peak:
+    aka: ["climax"]
+    description: >
+      Second drop or final drop, higher energy than the first. In an arrangement graph,
+      the highest energy point.
+
+  outro:
+    aka: ["mix-out", "closing bars"]
+    typical_length: "16-32 bars"
+    description: >
+      Mirror of the intro — elements peel away until only percussion remains. Designed
+      for DJs to mix out.
+    dj_use: "Begin mixing into the next track's intro here."
+    sources:
+      - "https://mixedinkey.com/captain-plugins/wiki/how-to-arrange-a-dance-music-track/"
+
+  phrase:
+    aka: ["16-bar phrase", "32-bar phrase"]
+    description: >
+      The fundamental structural unit in dance music. A 'phrase' is typically 16 bars
+      (64 beats) or 32 bars (128 beats) — one rotation of the main groove. Nearly all
+      electronic arrangement respects 8/16/32-bar boundaries; elements arrive and leave
+      on phrase boundaries.
+    dj_use: >
+      DJs align cue points to phrase starts. 'Phrase mixing' means starting the incoming
+      track at a phrase boundary and swapping at the next one, so both tracks' structural
+      logic aligns (intros meet outros, breakdowns meet breakdowns).
+    sources:
+      - "https://blog.native-instruments.com/phrase-mixing/"
+      - "https://learningtodj.com/blog/ultimate-guide-to-phrasing-in-djing/"
+
+  # --- Song-form (disco, hip-hop) ---
+
+  verse:
+    parent_form: "Song structure (disco/hip-hop)"
+    description: "Narrative section with vocals; typically 16 bars in hip-hop, 8 in disco/pop."
+
+  chorus_hook:
+    aka: ["hook", "refrain"]
+    description: "Repeated memorable section, usually 8 bars, higher energy than verse."
+
+  bridge_middle_8:
+    aka: ["middle-8"]
+    description: >
+      Contrast section before the final chorus. 8 bars (hence 'middle-8'). In a disco
+      track this is where a DJ might extend by looping — differs from the electronic
+      'breakdown' which drops drums entirely.
+
+  bars_of_rolling:
+    aka: ["rolling"]
+    description: >
+      DJ shorthand. '16 bars of rolling' = 16 bars where the track is in its groove state
+      (no breakdown, no build) — a stable window for mixing, EQ work, or loop extending.
+
+# ========================================================================
+# SET STRUCTURE — The Arc of the Night
+# ========================================================================
+
+set_structure:
+
+  warm_up:
+    time_slot: "Opening hours (10pm-12am in a club)"
+    tempo_range: "110-122 BPM"
+    role: >
+      Prime the room. Texture over energy. The warm-up DJ's job is to create atmosphere
+      and gradually move tempos/energy upward so the headliner has somewhere to take it.
+      A good warm-up never peak-hunts.
+    dj_notes:
+      - "Hold tempo and energy BELOW what the headliner will play"
+      - "No 'biggest tracks' — save those for peak"
+      - "Familiar ≠ anthemic. Accessible grooves, not bangers"
+      - "Consider texture, tempo, groove, AND energy per track"
+    sources:
+      - "https://ra.co/features/1095"
+      - "https://djtechtools.com/amp/2015/11/20/warmup-djs-play-to-the-crowd/"
+      - "https://subclub.co.uk/subcultural-art-of-the-warm-up-set/"
+
+  first_peak:
+    time_slot: "~12am-1:30am"
+    tempo_range: "122-128 BPM"
+    role: >
+      Room is filling. First real energy spike. Floor-fillers that are recognizable but
+      not the biggest moments of the night. Building trust with the crowd.
+    dj_notes:
+      - "Classic rule: never drop your biggest track before 1am"
+      - "Use recognizable vocals/hooks to engage"
+
+  climax:
+    aka: ["peak-time", "prime-time"]
+    time_slot: "~1:30am-3:30am"
+    tempo_range: "126-135 BPM (house/techno); 140 (dubstep/grime/DnB scaled)"
+    role: "The headliner moment. Biggest tracks, largest dynamic swings, crowd at peak density."
+    dj_notes:
+      - "Tension-build-release cycles every 3-5 minutes"
+      - "Drop ID/anthem tracks here — they cash the trust built earlier"
+    sources:
+      - "https://djtechtools.com/2010/07/25/the-time-line-of-a-dance-floor/"
+
+  after_hours:
+    time_slot: "~3:30am-6am (or 10hr+ in Berlin)"
+    tempo_range: "Can go UP (hypnotic 130-140 peak) or DOWN (deep 118-125)"
+    role: >
+      Dedicated crowd only. Two schools: (1) deepen and hypnotize with long rolling
+      grooves (Berghain/Panorama Bar tradition) or (2) keep intensity peaking with
+      harder/faster material for the die-hards. Closing sets here often run 3-10+ hours.
+    dj_notes:
+      - "Longer tracks — let them breathe"
+      - "Less familiar material — the crowd is here for discovery"
+      - "Panorama Bar runs 3hr+ residencies; Berghain closings 10hr+"
+    sources:
+      - "https://en.wikipedia.org/wiki/Berghain"
+
+  closing:
+    time_slot: "Final 30-60 min"
+    tempo_range: "Slowing — 110-120 BPM"
+    role: >
+      Ease the crowd out. Play 'end of night' tracks with emotional/nostalgic weight.
+      Slow tempo to cool the floor. Leave them with a song that makes them feel good
+      about the evening ending.
+    dj_notes:
+      - "Full circle — some closers echo warm-up tempos/moods"
+      - "Classic closers: emotional vocal tracks, disco, classics"
+    sources:
+      - "https://djtechtools.com/2010/07/25/the-time-line-of-a-dance-floor/"
+
+# ========================================================================
+# DJ TECHNIQUE TERMS (bonus vocabulary)
+# ========================================================================
+
+technique:
+  phrase_mixing:
+    description: "Aligning cue points to 16/32-bar boundaries so structures of both tracks align during the blend."
+    source: "https://blog.native-instruments.com/phrase-mixing/"
+  eq_trading:
+    description: "Gradually swapping low/mid/high EQ bands between two tracks during a long blend — typically swap bass first (kick collision) then mids."
+  harmonic_mixing:
+    description: "Using key-compatible tracks (Camelot wheel / Mixed In Key) so basslines don't dissonate."
+  long_blend:
+    description: "4+ minute transition where both tracks coexist through multiple phrases. Characteristic of deep house / progressive sets."
+  cut_mix:
+    description: "Abrupt swap on a downbeat, typical of hip-hop, jungle, grime, footwork DJing."

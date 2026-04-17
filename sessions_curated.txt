@@ -1,0 +1,16 @@
+# Curated 15 — dry run batch
+ab:boom-bap-vs-trap
+ab:chicago-vs-detroit
+ab:uk-garage-vs-dubstep-original
+ab:dark-vs-warm-soulful
+evolution:techno
+evolution:hip-hop
+evolution:disco-funk-soul
+evolution:house
+thread:rhythm-dembow
+thread:rhythm-halftime
+thread:dna-808
+focus:deep-house
+focus:uk-garage
+focus:italo-disco
+focus:detroit-techno

@@ -32,7 +32,7 @@ import logging
 import argparse
 from urllib.parse import quote_plus
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
 from dotenv import load_dotenv
 from playwright.sync_api import sync_playwright
 
@@ -90,8 +90,13 @@ def _close_browser():
 # 1. FETCH — Playwright + Bright Data proxy with CAPTCHA auto-submit
 # ---------------------------------------------------------------------------
 
-def fetch_html(url, retries=2, delay=5):
-    """Fetch a 1001Tracklists page via Playwright + Bright Data proxy."""
+def fetch_html(url, retries=4, delay=8):
+    """Fetch a 1001Tracklists page via Playwright + Bright Data proxy.
+
+    The CAPTCHA bypass is flaky — Cloudflare Turnstile sometimes needs multiple
+    submit clicks and longer waits before yielding the real page. Retry up to 4
+    times, verify the captcha input is gone after submit.
+    """
     browser = _get_browser()
     if not browser:
         return None
@@ -105,13 +110,42 @@ def fetch_html(url, retries=2, delay=5):
             page.goto(url, wait_until="domcontentloaded", timeout=60000)
             page.wait_for_timeout(3000)
 
-            # Auto-submit CAPTCHA gate if present
-            submit_btn = page.query_selector("input[type=submit]")
-            if submit_btn:
-                log.info("  Submitting CAPTCHA gate...")
-                submit_btn.click()
-                page.wait_for_load_state("domcontentloaded", timeout=60000)
-                page.wait_for_timeout(5000)
+            # Auto-submit CAPTCHA gate if present. Sometimes needs multiple clicks
+            # because Cloudflare Turnstile may issue a fresh challenge.
+            captcha_was_present = False
+            for click_attempt in range(3):
+                submit_btn = page.query_selector("input[type=submit]")
+                if not submit_btn:
+                    break
+                captcha_was_present = True
+                log.info(f"  Submitting CAPTCHA gate (click {click_attempt + 1})...")
+                try:
+                    submit_btn.click()
+                    page.wait_for_load_state("domcontentloaded", timeout=60000)
+                except Exception as e:
+                    log.warning(f"  Submit click failed: {e}")
+                # Turnstile needs ≥10s for token validation; some pages take longer.
+                page.wait_for_timeout(10000)
+
+            # If CAPTCHA was present, the gate often redirects us to the home/search
+            # page after validation rather than the requested URL. Re-navigate.
+            if captcha_was_present:
+                current_url = page.url
+                if current_url.rstrip("/") != url.rstrip("/"):
+                    log.info(f"  Re-navigating to {url} after CAPTCHA (was at {current_url[:60]}...)")
+                    try:
+                        page.goto(url, wait_until="domcontentloaded", timeout=60000)
+                        page.wait_for_timeout(3000)
+                    except Exception as e:
+                        log.warning(f"  Re-navigate failed: {e}")
+
+            # Newer 1001TL pages render the tracklist via JS after page load.
+            # Wait for .trackValue (the main track-row selector) to appear in DOM.
+            try:
+                page.wait_for_selector(".trackValue", timeout=20000)
+                log.info("  .trackValue rendered — tracklist loaded")
+            except Exception:
+                log.info("  .trackValue not found after 20s — page may genuinely have no tracklist")
 
             html = page.content()
 
@@ -123,6 +157,13 @@ def fetch_html(url, retries=2, delay=5):
 
             if "Error 403" in html[:2000] or "cf-challenge" in html[:5000]:
                 log.warning("  Got a CAPTCHA/challenge page, retrying...")
+                time.sleep(delay)
+                continue
+
+            # Final check — is the captcha input still present? If so, the gate
+            # never lifted. Retry with a fresh context.
+            if 'name="captcha"' in html or "name='captcha'" in html:
+                log.warning("  CAPTCHA gate still present after submit — retrying with fresh context...")
                 time.sleep(delay)
                 continue
 
@@ -302,6 +343,17 @@ def extract_tracks(html, source=""):
     soup = BeautifulSoup(html, "html.parser")
     tracks = []
 
+    # Gate check: is this a CAPTCHA/validation page instead of the tracklist?
+    # 1001TL's gate HTML is ~60K of shell + "We need to validate your are real human!"
+    # with <input name="captcha"> and no track markup. Strategies would all return 0
+    # and produce a confusing "No tracks extracted" log — flag it explicitly instead.
+    if _is_captcha_gate(soup, html):
+        log.warning(
+            f"  CAPTCHA gate detected in {source or 'HTML'} — fetch layer did not bypass "
+            f"the 'validate you are real human' page. Re-fetch this URL."
+        )
+        return []
+
     # Strategy 1: JSON-LD structured data (most reliable when present)
     tracks = _extract_jsonld(soup, source)
     if tracks:
@@ -332,6 +384,13 @@ def extract_tracks(html, source=""):
         log.info(f"  Extracted {len(tracks)} tracks via Schema.org")
         return tracks
 
+    # Strategy 5.5: itemprop=tracks microdata (broader than Strategy 5 — matches any
+    # tag and both http://schema.org/MusicRecording and https://schema.org/MusicRecording).
+    tracks = _extract_itemprop_tracks(soup, source)
+    if tracks:
+        log.info(f"  Extracted {len(tracks)} tracks via itemprop=tracks microdata")
+        return tracks
+
     # Strategy 6: Regex on page text ("1. Artist - Title" pattern)
     tracks = _extract_numbered_list(soup, source)
     if tracks:
@@ -346,6 +405,51 @@ def extract_tracks(html, source=""):
 
     log.warning(f"  No tracks extracted from {source or 'HTML'}")
     return []
+
+
+def _is_captcha_gate(soup, html):
+    """Return True if the HTML is a 1001TL CAPTCHA/validation gate rather than a tracklist."""
+    # Small HTML (< ~80KB) with a captcha input and no track markup is a dead giveaway.
+    if soup.select_one("input[name='captcha']") is None:
+        return False
+    if soup.select(".trackValue") or soup.select(".trackFormat__text"):
+        return False
+    if soup.select("[itemtype*='MusicRecording']"):
+        return False
+    # Textual signature from the gate page.
+    body = soup.find("body")
+    body_text = body.get_text(" ", strip=True) if body else ""
+    if "validate" in body_text.lower() and "human" in body_text.lower():
+        return True
+    # Fallback: tiny page with captcha input and nothing else is still a gate.
+    return len(html) < 100000
+
+
+def _extract_itemprop_tracks(soup, source):
+    """
+    Broader microdata selector than _extract_schema_org.
+    Matches any element with itemprop='tracks' and pulls name/byArtist meta children.
+    """
+    tracks = []
+    for el in soup.select("[itemprop='tracks']"):
+        name_meta = el.find("meta", {"itemprop": "name"})
+        artist_meta = el.find("meta", {"itemprop": "byArtist"})
+        if not name_meta:
+            continue
+        name = (name_meta.get("content") or "").strip()
+        artist = (artist_meta.get("content") or "").strip() if artist_meta else ""
+        if not name:
+            continue
+        # name often has "Artist - Title" form; prefer byArtist + split title.
+        title = name
+        if artist and name.startswith(artist + " - "):
+            title = name[len(artist) + 3:].strip()
+        elif " - " in name and not artist:
+            artist, title = name.split(" - ", 1)
+            artist, title = artist.strip(), title.strip()
+        if artist and title:
+            tracks.append((artist, title, source))
+    return tracks
 
 
 def _extract_jsonld(soup, source):
@@ -481,7 +585,7 @@ def get_spotify():
 
 SPOTIFY_CACHE_PATH = os.path.join(os.path.dirname(__file__), "spotify_cache.json")
 BATCH_SIZE = 50          # search this many tracks, then add to playlist
-BATCH_PAUSE = 60         # seconds to pause between batches
+BATCH_PAUSE = 120        # seconds to pause between batches (doubled to avoid sustained-rate 429)
 TRACK_DELAY = 4          # seconds between each search call (~8 calls per 30s window)
 
 
@@ -571,7 +675,16 @@ def _add_tracks_to_playlist(sp, playlist_id, track_ids):
     existing = set()
     offset = 0
     while True:
-        resp = sp.playlist_tracks(playlist_id, fields="items.track.id", limit=100, offset=offset)
+        for attempt in range(3):
+            try:
+                resp = sp.playlist_tracks(playlist_id, fields="items.track.id", limit=100, offset=offset)
+                break
+            except Exception as e:
+                if attempt < 2:
+                    log.warning(f"  Timeout reading playlist (attempt {attempt+1}), retrying in 10s...")
+                    time.sleep(10)
+                else:
+                    raise
         items = resp.get("items", [])
         if not items:
             break
@@ -585,7 +698,16 @@ def _add_tracks_to_playlist(sp, playlist_id, track_ids):
     new_ids = [tid for tid in track_ids if tid and tid not in existing]
     if new_ids:
         for i in range(0, len(new_ids), 100):
-            sp.playlist_add_items(playlist_id, new_ids[i:i + 100])
+            for attempt in range(3):
+                try:
+                    sp.playlist_add_items(playlist_id, new_ids[i:i + 100])
+                    break
+                except Exception as e:
+                    if attempt < 2:
+                        log.warning(f"  Timeout adding tracks (attempt {attempt+1}), retrying in 10s...")
+                        time.sleep(10)
+                    else:
+                        raise
         log.info(f"  Added {len(new_ids)} tracks to playlist")
     return len(new_ids)
 
