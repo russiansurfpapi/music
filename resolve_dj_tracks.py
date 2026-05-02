@@ -28,6 +28,14 @@ def _cache_key(artist: str, title: str) -> str:
     return f"{(artist or '').strip().lower()}||{(title or '').strip().lower()}"
 
 
+def _is_unidentified(artist: str, title: str) -> bool:
+    """DJ-set 'ID' placeholder = unidentified track. Never resolve these — they
+    match an actual Spotify artist literally named 'ID' and pollute classifications."""
+    a = (artist or "").strip().lower()
+    t = (title or "").strip().lower()
+    return a in {"id", "i.d.", "unknown", "?"} or (a == "id" and t == "id")
+
+
 def _load_cache():
     if not os.path.exists(CACHE_PATH):
         return {}
@@ -51,7 +59,11 @@ def cmd_cache(args) -> None:
         ).fetchall()
         print(f"Unresolved rows: {len(rows)}")
         hit = 0
+        skipped_id = 0
         for r in rows:
+            if _is_unidentified(r["raw_artist"], r["raw_title"]):
+                skipped_id += 1
+                continue
             key = _cache_key(r["raw_artist"], r["raw_title"])
             sid = cache.get(key)
             if sid:
@@ -87,6 +99,7 @@ def cmd_cache(args) -> None:
         conn.commit()
         print(f"  cache hits: {hit}")
         print(f"  uri-extract hits: {uri_hit}")
+        print(f"  skipped unidentified (ID/unknown): {skipped_id}")
         print(f"  total newly resolved: {hit + uri_hit}")
 
 
@@ -120,7 +133,8 @@ def cmd_search(args) -> None:
         rows = conn.execute(
             "SELECT DISTINCT raw_artist, raw_title FROM dj_set_tracks "
             "WHERE spotify_id IS NULL AND raw_artist != 'spotify_uri' "
-            "AND length(raw_artist) > 1 AND length(raw_title) > 1"
+            "AND length(raw_artist) > 1 AND length(raw_title) > 1 "
+            "AND LOWER(raw_artist) NOT IN ('id', 'i.d.', 'unknown', '?')"
         ).fetchall()
         if args.max:
             rows = rows[:args.max]
@@ -172,15 +186,81 @@ def cmd_search(args) -> None:
         print(f"\nDone. Searched {searched}, found {found}.")
 
 
+def cmd_isrc(args) -> None:
+    """Resolve unmatched tracks that have an ISRC via Spotify isrc: search.
+    Near-100% hit rate, 1 API call per track."""
+    sp = get_spotify()
+    cache = _load_cache()
+    me = sp.current_user()
+    print(f"Authed: {me['display_name']}")
+
+    with connect() as conn:
+        rows = conn.execute(
+            "SELECT DISTINCT isrc, raw_artist, raw_title FROM dj_set_tracks "
+            "WHERE spotify_id IS NULL AND isrc IS NOT NULL AND length(isrc) > 3"
+        ).fetchall()
+        if args.max:
+            rows = rows[:args.max]
+        print(f"Will resolve {len(rows)} tracks via ISRC lookup")
+
+        searched = 0
+        found = 0
+        for r in rows:
+            isrc = r["isrc"]
+            try:
+                resp = sp.search(q=f"isrc:{isrc}", type="track", limit=1)
+                items = (resp.get("tracks") or {}).get("items", [])
+            except SpotifyException as e:
+                if getattr(e, "http_status", None) == 429:
+                    ra = e.headers.get("Retry-After") if getattr(e, "headers", None) else "?"
+                    print(f"\n⛔ 429 after {searched} searches (Retry-After: {ra}s). Saving cache, bailing.")
+                    _save_cache(cache)
+                    return
+                print(f"  err on ISRC {isrc}: {e}")
+                items = []
+
+            if items:
+                sid = items[0]["id"]
+                found += 1
+                conn.execute(
+                    "UPDATE dj_set_tracks SET spotify_id=? WHERE isrc=? AND spotify_id IS NULL",
+                    (sid, isrc),
+                )
+                key = _cache_key(r["raw_artist"], r["raw_title"])
+                cache[key] = sid
+            searched += 1
+            if searched % 10 == 0:
+                conn.commit()
+                _save_cache(cache)
+                print(f"  [{searched}/{len(rows)}] found {found} so far")
+            time.sleep(TRACK_DELAY)
+
+        conn.commit()
+        _save_cache(cache)
+        conn.execute("""
+            UPDATE dj_sets SET resolved_count = (
+                SELECT COUNT(*) FROM dj_set_tracks
+                WHERE dj_set_tracks.set_id = dj_sets.set_id
+                  AND dj_set_tracks.spotify_id IS NOT NULL
+            )
+        """)
+        conn.commit()
+        print(f"\nDone. Searched {searched} ISRCs, found {found}.")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("cache")
     s = sub.add_parser("search")
     s.add_argument("--max", type=int, default=0, help="Cap searches per run (default: all)")
+    i = sub.add_parser("isrc")
+    i.add_argument("--max", type=int, default=0, help="Cap searches per run (default: all)")
     args = ap.parse_args()
     if args.cmd == "cache":
         cmd_cache(args)
+    elif args.cmd == "isrc":
+        cmd_isrc(args)
     else:
         cmd_search(args)
 
