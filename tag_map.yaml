@@ -179,12 +179,6 @@ skip_tags:
 genre:
   house:
     - house
-    - electronic
-    - dance
-    - edm
-    - electronica
-    - club
-    - electronic dance music
     - house music
   techno:
     - techno
@@ -398,15 +392,10 @@ subgenre:
     - afrohouse
   minimal techno:
     - minimal techno
-    - minimal
-    - microhouse
-    - micro house
   detroit techno:
     - detroit techno
   industrial techno:
     - industrial techno
-    - industrial
-    - hard techno
     - ebm
   melodic techno:
     - melodic techno
@@ -425,6 +414,8 @@ subgenre:
   progressive house:
     - progressive house
     - prog house
+    - progressive
+    - progressive electronic
   hard house:
     - hard house
     - hardhouse
@@ -519,8 +510,6 @@ subgenre:
     - instrumental hip-hop
     - abstract hip hop
     - abstract hip-hop
-    - abstract
-    - beats
   conscious hip hop:
     - conscious hip hop
     - conscious rap
@@ -573,8 +562,6 @@ subgenre:
     - moombahton
   baltimore club:
     - baltimore club
-    - jersey club
-    - club music
   ghettotech:
     - ghettotech
   miami bass:
@@ -638,6 +625,76 @@ subgenre:
     - dub reggae
   deconstructed club:
     - deconstructed club
+  # --- Disco / nu-disco ---
+  nu-disco:
+    - nu-disco
+    - nu disco
+  cosmic disco:
+    - cosmic disco
+    - cosmic
+    - space disco
+  # --- Garage variants ---
+  speed garage:
+    - speed garage
+  two-step:
+    - two-step
+    - two step
+  # --- SA house / gqom ---
+  gqom:
+    - gqom
+  # --- Techno variants ---
+  peak time techno:
+    - peak time techno
+    - peak-time techno
+    - peak time
+    - peak-time
+  hard techno:
+    - hard techno
+    - schranz
+  # --- Trance variants ---
+  psytrance:
+    - psytrance
+    - psy trance
+    - psychedelic trance
+  goa trance:
+    - goa trance
+    - goa
+  progressive trance:
+    - progressive trance
+    - prog trance
+  # --- DnB / bass variants ---
+  liquid dnb:
+    - liquid dnb
+    - liquid drum and bass
+    - liquid funk
+  neurofunk:
+    - neurofunk
+    - neuro
+  jump up:
+    - jump up
+    - jumpup
+    - jump-up
+  # --- Microhouse (split from minimal techno) ---
+  microhouse:
+    - microhouse
+    - micro house
+    - micro-house
+  # --- Dubstep / brostep ---
+  brostep:
+    - brostep
+  # --- Latin club / ballroom ---
+  ballroom:
+    - ballroom
+    - vogue
+  jersey club:
+    - jersey club
+  funk carioca:
+    - funk carioca
+    - baile funk
+    - funk brasileiro
+  dembow:
+    - dembow
+    - dembow riddim
 
 # ---------------- LAYER 3: PRODUCTION DNA (multi) ----------------
 production_dna:

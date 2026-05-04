@@ -36,6 +36,8 @@ Built for passive listening (subway, cooking) by a former DJ who wanted to hear 
   LASTFM_API_KEY=...
   ```
 
+> **Running this on a different Spotify account?** See [SETUP.md](SETUP.md) for the full walkthrough — creating the Spotify dev app, adding your user, wiping local caches, and dev-mode gotchas.
+
 ### Install
 
 ```bash

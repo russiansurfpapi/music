@@ -183,9 +183,16 @@ def fetch_html(url, retries=4, delay=8):
 
 
 def fetch_and_save(url, output_dir="sets"):
-    """Fetch a URL and save the HTML to disk."""
+    """Fetch a URL and save the HTML to disk. Refuses to save hollow shell redirects."""
     html = fetch_html(url)
     if not html:
+        return None, None
+
+    # Shell-page guard: if Turnstile redirected us to the 1001TL homepage instead of
+    # the real tracklist, the HTML will have the generic title and no .trackValue
+    # elements. Don't persist that — it pollutes sets/ and downstream ingest.
+    if 'class="trackValue"' not in html and "1001Tracklists ⋅ The World's Leading" in html[:2000]:
+        log.warning(f"  Got shell-redirect HTML (no .trackValue, generic title) for {url} — not saving")
         return None, None
 
     os.makedirs(output_dir, exist_ok=True)

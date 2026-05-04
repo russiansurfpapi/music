@@ -6,8 +6,13 @@ For each pending track:
   3. else status='missing'
 
 Rate-limited to 5 req/s. Resumable. Commits every 50 tracks.
+
+Also promotes "orphan" dj_set_tracks rows (no spotify_id, from YouTube
+fingerprinting via shazam/ACRCloud) into the tracks table under deterministic
+synthetic `fp:<sha1>` ids with origin='fingerprint', so they get tagged too.
 """
 
+import hashlib
 import os
 import sys
 import time
@@ -108,6 +113,101 @@ def get_artist_tags(artist: str) -> Optional[List[Tuple[str, int]]]:
     return _extract_tags(data, "toptags")
 
 
+# Strings we treat as non-identifiable tracks (exclude from orphan promotion).
+_ID_SENTINELS = {
+    "id", "i.d.", "unknown", "?", "", "-", "--", "n/a", "na",
+    "track id", "trackid",
+}
+
+
+def _is_id_sentinel(s: Optional[str]) -> bool:
+    if s is None:
+        return True
+    return s.strip().lower() in _ID_SENTINELS
+
+
+def _fp_id(artist: str, title: str) -> str:
+    """Deterministic synthetic id for a fingerprinted (artist, title) pair."""
+    key = f"{artist.lower().strip()}||{title.lower().strip()}".encode("utf-8")
+    return "fp:" + hashlib.sha1(key).hexdigest()[:16]
+
+
+def _ensure_origin_column(conn: sqlite3.Connection) -> None:
+    """Add tracks.origin column if missing. Existing rows default to 'spotify'."""
+    cols = {row["name"] for row in conn.execute("PRAGMA table_info(tracks)")}
+    if "origin" in cols:
+        return
+    print("Migrating: adding tracks.origin column (default 'spotify')...")
+    conn.execute("ALTER TABLE tracks ADD COLUMN origin TEXT DEFAULT 'spotify'")
+    # Backfill existing rows (ALTER default only affects new rows on older SQLite)
+    conn.execute("UPDATE tracks SET origin='spotify' WHERE origin IS NULL")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_tracks_origin ON tracks(origin)")
+    conn.commit()
+
+
+def promote_orphans(conn: sqlite3.Connection) -> int:
+    """Promote distinct (raw_artist, raw_title) orphans in dj_set_tracks into tracks.
+
+    Returns the number of NEW fingerprint tracks inserted (not counting ones
+    that already existed from a previous run). Idempotent: uses the deterministic
+    fp:<sha1> id so repeated runs stay stable.
+    """
+    rows = conn.execute(
+        "SELECT DISTINCT raw_artist, raw_title FROM dj_set_tracks "
+        "WHERE spotify_id IS NULL"
+    ).fetchall()
+
+    inserted = 0
+    linked = 0
+    skipped_sentinel = 0
+    batch_since_commit = 0
+
+    for r in rows:
+        raw_artist = (r["raw_artist"] or "").strip()
+        raw_title = (r["raw_title"] or "").strip()
+        if _is_id_sentinel(raw_artist) or _is_id_sentinel(raw_title):
+            skipped_sentinel += 1
+            continue
+
+        fp = _fp_id(raw_artist, raw_title)
+
+        # Does this fp id already exist? (re-runnable)
+        exists = conn.execute(
+            "SELECT 1 FROM tracks WHERE spotify_id=?", (fp,)
+        ).fetchone()
+
+        if not exists:
+            try:
+                conn.execute(
+                    "INSERT INTO tracks (spotify_id, title, artist, origin, "
+                    "lastfm_status, features_status) "
+                    "VALUES (?, ?, ?, 'fingerprint', 'pending', 'unavailable')",
+                    (fp, raw_title, raw_artist),
+                )
+                inserted += 1
+            except sqlite3.IntegrityError:
+                # Lost race / edge case — ignore, we'll still link below.
+                pass
+
+        # Link *all* matching orphan rows (they may span many positions/sets).
+        cur = conn.execute(
+            "UPDATE dj_set_tracks SET spotify_id=? "
+            "WHERE raw_artist=? AND raw_title=? AND spotify_id IS NULL",
+            (fp, raw_artist, raw_title),
+        )
+        linked += cur.rowcount or 0
+
+        batch_since_commit += 1
+        if batch_since_commit >= COMMIT_EVERY:
+            conn.commit()
+            batch_since_commit = 0
+
+    conn.commit()
+    print(f"  promoted: {inserted} new fingerprint tracks inserted "
+          f"({linked} dj_set_tracks rows linked, {skipped_sentinel} ID/sentinel pairs skipped)")
+    return inserted
+
+
 def main():
     if not LASTFM_API_KEY:
         print("ERROR: LASTFM_API_KEY not set")
@@ -115,6 +215,14 @@ def main():
 
     conn = dbmod.connect()
     try:
+        # Schema migration (idempotent).
+        _ensure_origin_column(conn)
+
+        # Promote fingerprint orphans from dj_set_tracks into tracks so the
+        # existing pending-row loop below picks them up.
+        print("Promoting orphan dj_set_tracks into tracks (origin='fingerprint')...")
+        promote_orphans(conn)
+
         total = conn.execute("SELECT COUNT(*) FROM tracks").fetchone()[0]
         pending_count = conn.execute(
             "SELECT COUNT(*) FROM tracks WHERE lastfm_status='pending'"
