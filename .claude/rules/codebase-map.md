@@ -65,6 +65,10 @@
   - `dj_sets.source_file` is NOT NULL — YouTube-origin sets store the URL there (and in `youtube_url`)
   - `dj_set_tracks` has `timestamp_sec`, `confidence`, `source`, `isrc` cols for fingerprint-origin rows
   - Synthetic ID prefixes: `lfm:` (Last.fm bypass), `fp:` (fingerprint bypass) — filter these before Spotify API calls
+  - `db.migrate()` (`db.py:210`) handles `ALTER TABLE ADD COLUMN` idempotently — **add a new
+    column to `_ADDED_COLUMNS` (`db.py:202`), not to the `CREATE TABLE`**, or existing
+    databases never get it. (Carried over 2026-09-06 from `~/.claude/rules/codebase-map.md`;
+    it was the one fact in that file's DJ section not already stated in this repo.)
 
 ## Config
 - `.env` — Spotify creds, Bright Data creds, **ACRCloud creds** (ACR_HOST, ACR_KEY, ACR_SECRET)
@@ -152,6 +156,53 @@
 ## Subagents (`.claude/agents/`)
 - `dj-demo.md` — live demo guide for a guest exploring the toolkit
 - `dj-scraper-planner.md` — audits DB coverage + plans scraping strategy + falls back to manual instructions
+
+## Artist Influence Discovery (added 2026-07-05)
+
+### discover_influences.py — automated SERP + YouTube + LLM → Spotify influence playlist
+- Pipeline: SerpAPI (5 query angles) → scrape articles (urllib + Bright Data fallback) → YouTube transcripts (Deepgram Nova-2 or yt-dlp VTT) → Claude Haiku extraction → fuzzy-deduped Spotify sampler
+- Fuzzy dedup: `difflib.SequenceMatcher` at 0.82 threshold, accent-stripping, remaster/deluxe suffix removal
+- Multi-query sampler: general tracks + named tracks from interviews + popular tracks per influence
+- CLI: `<artist> [--deepgram] [--bright-data] [--tracks-per-artist N] [--dry-run] [--save-research] [--playlist NAME]`
+
+### artist_influences.py — interview YAML → Spotify influence playlist (manual research path)
+- Reads `{slug}_interviews_raw.md`, parses YAML `influence_map` + `named_influences`
+- Sampler approach: top tracks + recent releases + album deep cuts
+- CLI: `--list-influences`, `--dry-run`, `--tracks-per N`, `--playlist-name`
+
+### Interview research files
+- `don_toliver_interviews_raw.md` — 14 sources, 15 vocab terms
+- `kali_uchis_interviews_raw.md` — 15 sources, 18 vocab terms
+- `rosalia_interviews_raw.md` — 13 sources, 16 vocab terms
+- Format: raw quotes by source → `## Vocabulary Synthesis (YAML)` with ```yaml block at bottom
+
+## Subgenre playlists (updated 2026-08-20)
+
+### build_subgenre_playlists.py — cross-DJ `<Subgenre> — Study` playlists
+- One playlist per subgenre, sourced from the whole library via `classifications.subgenre`
+- `pretty_subgenre()` + `ACRONYMS` map fixes `.title()` mangling ("Uk Garage" -> "UK Garage")
+- CLI: `--subgenre`, `--min-tracks` (default 25; 10 gives 79 playlists), `--cap`, `--dry-run`
+- Ordering: real Spotify IDs before synthetic `lfm:`/`fp:`, then play-count desc
+
+### backfill_missing_tracks.py — rescue real-ID tracks missing from `tracks`
+- `lastfm_tags.promote_orphans()` only handles `dj_set_tracks` rows with `spotify_id IS NULL`.
+  Rows with a REAL Spotify ID but no `tracks` row are invisible to it — they never get
+  tagged, never get classified, and silently vanish from every subgenre playlist.
+- Reads metadata from `dj_set_tracks.raw_artist/raw_title` (no Spotify calls)
+- Inserts with `lastfm_status='pending'`; follow with `lastfm_tags.py` then `classify.py`
+- CLI: `--dry-run`
+
+### Spotify API gotchas (learned the hard way)
+- **Playlist items nest the track under `item`, not `track`.** `fields="items.track.id"`
+  returns empty objects — dedupe sets come back empty and rebuilds duplicate everything.
+  Always request `items(item(id),track(id))` and accept either key.
+- **Batch `/tracks?ids=` returns 403** on this app (same restriction as audio-features).
+  Single-track `/tracks/{id}` works. Don't build on batch lookups.
+- **`_get_or_create_playlist` uses a per-process index** (`_PLAYLIST_INDEX`). Rescanning
+  1,500 playlists per lookup is what earned a 23-hour `QUOTA_EXCEEDED` ban.
+  Call `reset_playlist_index()` if playlists are renamed out of band.
+- **429 backoff is capped** at `MAX_RETRY_AFTER = 120`s. Spotify hands dev-mode apps
+  multi-hour `Retry-After` values; longer ones raise instead of hanging the process.
 
 ## Backups
 - `library.db.bak` — pre-classification-overhaul (2026-04-20)
