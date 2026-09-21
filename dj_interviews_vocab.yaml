@@ -1,0 +1,412 @@
+# DJ Interview Vocabulary Synthesis
+# Extracted from ~25 interviews across 20+ DJs, April 2026
+# Sources: Crack Magazine, Fact Magazine, DJ Mag, XLR8R, Mixmag, RA
+
+subgenre_usage:
+  - term: "dreary techno"
+    used_by: ["Objekt"]
+    means: "Uninspired, formulaic techno that emerged in the wake of Sandwell District/Dozzy-era innovation — technically competent but creatively bankrupt"
+    example_quote: "What Sandwell District and [Donato] Dozzy were doing seven years ago was really great, but the downside is that it fed this current wave of dreary techno that is coming out now."
+    source_url: "https://djmag.com/content/objekt-another-dimension"
+
+  - term: "Berghain techno"
+    used_by: ["Objekt"]
+    means: "A specific straight, monolithic sound associated with the Berlin club — used here as something to deliberately avoid"
+    example_quote: "The pace changes frequently and there is no 'Berghain techno' to be heard"
+    source_url: "https://crackmagazine.net/article/long-reads/when-form-becomes-protocol-objekt-instinctively-resists/"
+
+  - term: "grinding analogue techno"
+    used_by: ["Helena Hauff"]
+    means: "Raw, hardware-only techno with heavy analog distortion and industrial texture"
+    example_quote: "grinding analogue techno"
+    source_url: "https://www.factmag.com/2015/03/07/i-want-to-destroy-society-helena-hauff-talks-philosophy-politics-and-expecting-the-unexpected/"
+
+  - term: "gurning electro-techno"
+    used_by: ["Helena Hauff"]
+    means: "Acid-inflected electro-techno that induces face-contorting intensity on the dancefloor"
+    example_quote: "gurning electro-techno"
+    source_url: "https://www.factmag.com/2015/03/07/i-want-to-destroy-society-helena-hauff-talks-philosophy-politics-and-expecting-the-unexpected/"
+
+  - term: "dark, industrial acid techno"
+    used_by: ["Helena Hauff"]
+    means: "A niche within a niche — acid techno with industrial production values and bleak aesthetics"
+    example_quote: "dark, industrial acid techno which she produces and performs is a niche in itself, a sub-genre of a sub-genre"
+    source_url: "https://djmag.com/features/hauff-music-all-night-long"
+
+  - term: "dusty house from Chicago"
+    used_by: ["Nina Kraviz"]
+    means: "Lo-fi, warm, analog Chicago house with a vintage patina — as opposed to polished modern house"
+    example_quote: "Dusty house from Chicago. IDM and Italo disco."
+    source_url: "https://xlr8r.com/features/20-questions-nina-kraviz/"
+
+  - term: "dreamy '90s techno"
+    used_by: ["Nina Kraviz"]
+    means: "Atmospheric, melodic techno from the 1990s spanning Detroit, Stockholm, and Reykjavik — ambient-influenced, less percussive"
+    example_quote: "dreamy '90s techno from Detroit, New York, Stockholm, and Reykjavik"
+    source_url: "https://xlr8r.com/features/20-questions-nina-kraviz/"
+
+  - term: "cosmic disco"
+    used_by: ["DJ Harvey"]
+    means: "Mid-tempo European disco with psychedelic, Balearic and Afro influences — slower and trippier than classic disco"
+    example_quote: "the wonders of mid-tempo European music including sleaze, balearic, afro, and ultimately cosmic disco"
+    source_url: "https://mixmag.net/feature/dj-harvey-mercury-rising-interview"
+
+  - term: "sleaze"
+    used_by: ["DJ Harvey"]
+    means: "A Balearic-adjacent style — low-slung, seedy-sounding disco/house with a debauched quality"
+    example_quote: "mid-tempo European music including sleaze, balearic, afro"
+    source_url: "https://mixmag.net/feature/dj-harvey-mercury-rising-interview"
+
+  - term: "mellow steady kick drums (accidental deep house)"
+    used_by: ["Cyril Hahn"]
+    means: "Cyril Hahn's description of his own sound before he knew the genre name — melodic, restrained, 4/4 grooves that others labeled deep house before he was aware of the scene"
+    example_quote: "I didn't know much about house music I just liked steady kick drums and then everyone started calling my music deep house but I had absolutely no clue what they were talking about."
+    source_url: "https://www.complex.com/music/2014/10/cyril-hahn-interview"
+
+  - term: "chopping up accappellas"
+    used_by: ["Cyril Hahn"]
+    means: "Production/DJ technique of taking R&B/soul vocal recordings and cutting them into hooks or loops as a track's melodic core. Cyril Hahn's signature method — he started as a remixer of Destiny's Child, Mariah Carey etc., and still works vocal-first"
+    example_quote: "working with accappellas is still my favourite way to work; chopping them up is something I just really enjoy."
+    source_url: "https://www.complex.com/music/2014/10/cyril-hahn-interview"
+
+  - term: "melody-first mellow stuff"
+    used_by: ["Cyril Hahn"]
+    means: "Emphasis on melodic content and restrained energy — contrast to peak-time tool tracks. Cyril Hahn's acknowledged preference across production and selection"
+    example_quote: "I always needed to have a melody in there. I always preferred the mellow stuff, and still do."
+    source_url: "https://www.complex.com/music/2014/10/cyril-hahn-interview"
+
+  - term: "vocal hooks as selection criterion"
+    used_by: ["Cyril Hahn"]
+    means: "Picking tracks based on prominent vocals or standout hook sounds rather than groove/rhythm first — selection philosophy for both production and DJing"
+    example_quote: "It's usual the vocals. I look for hooks or sounds that really stand out to me."
+    source_url: "https://www.wonderlandmagazine.com/2014/07/04/new-noise-cyril-hahn/"
+
+  - term: "New York garage-y house"
+    used_by: ["Shanti Celeste"]
+    means: "Soulful, vocal-driven house with the swing and shuffle of NYC garage tradition"
+    example_quote: "I loved New York garage-y house and I love Chicago drum machine-y stuff"
+    source_url: "https://crackmagazine.net/article/long-reads/shanti-celeste-life-soul/"
+
+  - term: "Chicago drum machine-y stuff"
+    used_by: ["Shanti Celeste"]
+    means: "Raw, machine-driven Chicago house centered on Roland drum machines — less polished, more rhythmic than NYC garage"
+    example_quote: "I love Chicago drum machine-y stuff. It's definitely music that's really influenced my sound, just that particular swing and shuffle"
+    source_url: "https://crackmagazine.net/article/long-reads/shanti-celeste-life-soul/"
+
+  - term: "jacking"
+    used_by: ["Shanti Celeste"]
+    means: "A rhythmic quality in UK techno/rave — driving, physically compelling, body-moving intensity"
+    example_quote: "UK techno/rave can just be more jacking, energetic and faster in tempos"
+    source_url: "https://crackmagazine.net/article/long-reads/shanti-celeste-life-soul/"
+
+  - term: "hyper-digital, glossy, glassy"
+    used_by: ["Caribou"]
+    means: "Contemporary digital production aesthetic — clean, bright, two-dimensional synth and drum sounds (as in modern R&B)"
+    example_quote: "That kind of hyper-digital, glossy, glassy, two-dimensional synth sounds and drum sounds."
+    source_url: "https://crackmagazine.net/article/long-reads/caribou/"
+
+  - term: "EDM barfsplosion"
+    used_by: ["Caribou"]
+    means: "Derisive term for the maximalist, formulaic EDM explosion of the early 2010s"
+    example_quote: "EDM barfsplosion"
+    source_url: "https://www.factmag.com/2014/09/12/im-15-years-older-than-most-of-the-people-in-clubs-but-it-doesnt-bother-me-caribou-interviewed/"
+
+  - term: "Motor City-inspired soulful house"
+    used_by: ["Moodymann"]
+    means: "Detroit house with deep soul, jazz and R&B DNA — warm, textured, often sample-heavy"
+    example_quote: "his particular brand of Motor City-inspired soulful house"
+    source_url: "https://mixmag.net/feature/moodymann-still-on-this-mothafuckin-record"
+
+  - term: "basic house music"
+    used_by: ["Motor City Drum Ensemble"]
+    means: "Stripped-down, unpretentious house with no frills — said with love, not dismissal"
+    example_quote: "It's really basic house music. I love this kind of shit."
+    source_url: "https://crackmagazine.net/article/long-reads/motor-city-drum-ensemble-looking-light-nighttime/"
+
+  - term: "liquid drum & bass"
+    used_by: ["Octo Octa"]
+    means: "Melodic, soulful strain of drum & bass (LTJ Bukem school) — smooth basslines, atmospheric pads"
+    example_quote: "liquid drum & bass pioneer LTJ Bukem"
+    source_url: "https://djmag.com/features/octo-octa-ode-joy"
+
+  - term: "melody drenched, vocal-sampled house"
+    used_by: ["Octo Octa"]
+    means: "House music built around vocal samples and rich melodies with 90s nostalgia"
+    example_quote: "melody drenched, vocal-sampled house music, with generous pinches of 90s nostalgia"
+    source_url: "https://crackmagazine.net/article/long-reads/octo-octa-move-on-let-go/"
+
+track_section_terms:
+  - term: "caesura"
+    described_by: ["Octo Octa"]
+    means: "A deliberate pause or ambient interlude in the middle of an album/set — a retreat from dancefloor energy into chill-out ambience"
+    quote: "a caesura, retreating from the sparkling house productions on either side into classic chill-out room ambience"
+    source_url: "https://crackmagazine.net/article/long-reads/octo-octa-move-on-let-go/"
+
+  - term: "slowed Amen breaks"
+    described_by: ["Octo Octa"]
+    means: "The iconic breakbeat sample played at reduced tempo — creates a dreamy, deconstructed feel vs its usual frenetic jungle usage"
+    quote: "pensive piano lilts, slowed Amen breaks"
+    source_url: "https://crackmagazine.net/article/long-reads/octo-octa-move-on-let-go/"
+
+  - term: "the groove locks in"
+    described_by: ["Honey Dijon"]
+    means: "The moment when rhythm, bassline and crowd synchronize — the set stops 'searching' and enters a flow state"
+    quote: (paraphrased from set-arc discussion)
+    source_url: "https://djmag.com/features/honey-dijon-i-want-people-feel-they-stepped-another-world"
+
+  - term: "live jams rather than traditional songs"
+    described_by: ["Helena Hauff"]
+    means: "Tracks structured as spontaneous hardware performances with no verse/chorus — continuous evolution rather than sections"
+    quote: "tracks are a series of live jams rather than traditional songs"
+    source_url: "https://djmag.com/features/hauff-music-all-night-long"
+
+  - term: "the weird bit"
+    described_by: ["Caribou"]
+    means: "A section of a track that breaks convention or expectation — makes it hard to mix but interesting to listen to"
+    quote: "Can't play that one, can't play that one, I can almost play this one, but then it goes into a weird bit"
+    source_url: "https://www.factmag.com/2014/09/12/im-15-years-older-than-most-of-the-people-in-clubs-but-it-doesnt-bother-me-caribou-interviewed/"
+
+  - term: "chipping away at a block of stone"
+    described_by: ["Objekt"]
+    means: "Subtractive production — starting with rough material and removing elements over 80+ revisions until the track emerges"
+    quote: "My working style is one of revision after revision. The tracks start off very rough. It's like chipping away at a block of stone..."
+    source_url: "https://djmag.com/content/objekt-another-dimension"
+
+  - term: "krautish zone-outs"
+    described_by: ["Helena Hauff"]
+    means: "Extended, hypnotic passages influenced by Krautrock — repetitive, motorik, meditative sections within a set or track"
+    quote: "krautish zone-outs"
+    source_url: "https://www.factmag.com/2015/03/07/i-want-to-destroy-society-helena-hauff-talks-philosophy-politics-and-expecting-the-unexpected/"
+
+set_arc_terms:
+  - term: "building the room, changing the room, switching the room"
+    used_by: ["Honey Dijon"]
+    means: "Three distinct phases of a long set — establishing energy, shifting mood, then transforming the vibe entirely"
+    quote: "You play differently building the room, changing the room, switching the room."
+    source_url: "https://djmag.com/features/honey-dijon-i-want-people-feel-they-stepped-another-world"
+
+  - term: "you play differently at two than you will at six"
+    used_by: ["Honey Dijon"]
+    means: "Time-of-night awareness as fundamental DJ skill — 2am energy is building; 6am is deep, hypnotic, transcendent"
+    quote: "You play differently at two than you will at six."
+    source_url: "https://djmag.com/features/honey-dijon-i-want-people-feel-they-stepped-another-world"
+
+  - term: "entertainment vs the actual craft of DJing"
+    used_by: ["Honey Dijon"]
+    means: "90-minute festival slots force entertainment mode; real DJing craft requires long-form time to build narrative"
+    quote: "It's incredibly difficult for me to DJ for 90 minutes because you're playing from a point of entertainment as opposed to the actual craft of DJing."
+    source_url: "https://djmag.com/features/honey-dijon-i-want-people-feel-they-stepped-another-world"
+
+  - term: "storytelling, emotions, tension"
+    used_by: ["Honey Dijon"]
+    means: "The three pillars of a proper DJ set — narrative arc, emotional resonance, and dynamic contrast"
+    quote: "For me, it's about storytelling, emotions, tension."
+    source_url: "https://djmag.com/features/honey-dijon-i-want-people-feel-they-stepped-another-world"
+
+  - term: "clearing dancefloors on purpose"
+    used_by: ["Nina Kraviz"]
+    means: "Deliberate provocation — playing against expectations to reset energy or test the room's commitment"
+    quote: "I would clear dancefloors at festivals, on purpose sort of"
+    source_url: "https://crackmagazine.net/article/long-reads/nina-kraviz-in-conversation-with-james-murphy-same-same-but-different/"
+
+  - term: "playing the same record three times"
+    used_by: ["Nina Kraviz"]
+    means: "Radical repetition as DJ technique — hammering a track to create trance-like insistence"
+    quote: "Playing the same record three times, which is something I used to do. Pick up the needle, blow it off"
+    source_url: "https://crackmagazine.net/article/long-reads/nina-kraviz-in-conversation-with-james-murphy-same-same-but-different/"
+
+  - term: "a seething mass of sound"
+    used_by: ["DJ Stingray"]
+    means: "Lightning-fast mixing where tracks blur into continuous sonic texture rather than discrete selections"
+    quote: "with the constant shifts in tone, a DJ Stingray set is more of a seething mass of sound"
+    source_url: "https://crackmagazine.net/article/long-reads/the-unrelenting-energy-of-dj-stingray/"
+
+  - term: "recontextualise a track"
+    used_by: ["Ben UFO"]
+    means: "Playing a record in an unexpected context that reveals new dimensions — the core of creative DJing"
+    quote: "ability to recontextualise a track, bringing overlooked music back to life"
+    source_url: "https://mixmag.net/feature/pure-and-simple-ben-ufo-is-one-of-the-most-beloved-djs-of-our-time"
+
+  - term: "rescue a dancefloor"
+    used_by: ["Motor City Drum Ensemble"]
+    means: "Deploying a guaranteed crowd-pleaser when energy dips — a hit kept in reserve for emergencies"
+    quote: "there's definitely a box of things like that to rescue a dancefloor"
+    source_url: "https://crackmagazine.net/article/long-reads/motor-city-drum-ensemble-looking-light-nighttime/"
+
+  - term: "conductor of an evening"
+    used_by: ["Octo Octa"]
+    means: "The DJ as orchestrator of collective emotion rather than performer seeking attention"
+    quote: "conductor of an evening"
+    source_url: "https://djmag.com/features/octo-octa-ode-joy"
+
+  - term: "off-kilter, a bit weird"
+    used_by: ["Joy Orbison"]
+    means: "Deliberate moments of strangeness within a set that reward audience trust"
+    quote: "I want to have some moments where it's a bit off-kilter, a bit weird"
+    source_url: "https://djmag.com/features/joy-orbison-still-striving-interview"
+
+  - term: "the right record for the right moment"
+    used_by: ["Four Tet"]
+    means: "Selection over technique — reading the room matters more than beatmatching skill"
+    quote: "focusing on having the right record for the right moment rather than worrying about mixing"
+    source_url: "https://ra.co/news/44932"
+
+  - term: "collision of two worlds"
+    used_by: ["Caribou"]
+    means: "Deliberately juxtaposing organic samples against synthetic elements for surprise and tension"
+    quote: "I always like that collision, or that surprise, of those two worlds colliding when DJing"
+    source_url: "https://www.factmag.com/2012/10/01/it-isnt-a-particularly-macho-endeavour-dan-snaith-talks-daphni-his-reaction-to-the-edm-shooting-match/"
+
+production_gear:
+  - term: "the machine comes to life"
+    used_by: ["Helena Hauff"]
+    means: "Analog hardware developing its own character through imperfection — warmth, drift, unexpected behavior"
+    quote: "The machine comes to life and becomes something with its own soul"
+    source_url: "https://crackmagazine.net/article/long-reads/helena-hauff-death-disco/"
+
+  - term: "triggering vs step programming"
+    used_by: ["Floating Points"]
+    means: "Manually playing drum hits for human swing vs using the machine's quantized step sequencer"
+    quote: "always triggered the sounds rather than using the step programmer, preferring to have control over swing rather than letting Roland's preset swing dictate his rhythm"
+    source_url: "https://ra.co/features/3548"
+
+  - term: "hissy analogue leads"
+    used_by: ["Caribou"]
+    means: "Warm, noisy analog synth lines with audible signal degradation — deliberately lo-fi"
+    quote: "hissy analogue leads, rough-edged drum programming"
+    source_url: "https://www.factmag.com/2012/10/01/it-isnt-a-particularly-macho-endeavour-dan-snaith-talks-daphni-his-reaction-to-the-edm-shooting-match/"
+
+  - term: "they make music on their own"
+    used_by: ["Ricardo Villalobos"]
+    means: "Modular synthesizers generating unexpected patterns and textures through voltage interactions — semi-autonomous instruments"
+    quote: 'they make music on their own (re: Doepfer modular systems)'
+    source_url: "https://www.factmag.com/2012/04/14/ricardo-villalobos-a-fine-balance/"
+
+  - term: "30-year-old machines"
+    used_by: ["Helena Hauff"]
+    means: "Deliberate commitment to vintage hardware (TR-303, 808, Juno-60) for their unpredictable character"
+    quote: "30-year-old machines"
+    source_url: "https://djmag.com/features/hauff-music-all-night-long"
+
+  - term: "volume, height and density"
+    used_by: ["Theo Parrish"]
+    means: "Sound as three-dimensional sculpture — frequency range (height), loudness (volume), and layering (density) plus the time dimension"
+    quote: "With sound, you're dealing with almost the same things except you're dealing with a time element too."
+    source_url: "https://crackmagazine.net/article/long-reads/theo-parrish/"
+
+  - term: "punk approach to production"
+    used_by: ["Helena Hauff"]
+    means: "Speed and raw expression over polish — record and release without overthinking"
+    quote: "I've got more of a punk approach to music -- just do it and get it out there"
+    source_url: "https://www.factmag.com/2015/03/07/i-want-to-destroy-society-helena-hauff-talks-philosophy-politics-and-expecting-the-unexpected/"
+
+  - term: "record button always on"
+    used_by: ["Caribou"]
+    means: "Capturing happy accidents by always recording — studio as continuous performance"
+    quote: "I record everything. I never make music without the record button turned on."
+    source_url: "https://crackmagazine.net/article/long-reads/caribou/"
+
+  - term: "naive approach to music"
+    used_by: ["Ricardo Villalobos"]
+    means: "Not being fixated on a production goal — letting the process lead rather than imposing structure"
+    quote: "This naive approach to music is something that's becoming more and more important. This process of not being fixated on a goal."
+    source_url: "https://www.factmag.com/2012/04/14/ricardo-villalobos-a-fine-balance/"
+
+distinctions:
+  - claim: "Techno is a feeling, not a sound"
+    by: "Nina Kraviz"
+    quote: "For me techno is a period of time, a cultural genre, a feeling and an attitude"
+    source_url: "https://crackmagazine.net/article/long-reads/nina-kraviz-collects-stories-%D1%82%D1%80%D0%B8%D0%BF-label/"
+
+  - claim: "Techno as important as jazz"
+    by: "Nina Kraviz"
+    quote: "It's a phenomenon, it's as important as jazz"
+    source_url: "https://djmag.com/content/nina-kraviz-%E2%80%98techno-underestimated-genre%E2%80%99"
+
+  - claim: "Detroit techno and electro house seem the same to outsiders but are vastly different"
+    by: "Objekt"
+    quote: "the differences to an outsider between say Detroit techno and electro house are probably tiny, but for people like me, they are huge."
+    source_url: "https://djmag.com/content/objekt-another-dimension"
+
+  - claim: "What was called minimal is now called tech-house, and neither term means anything"
+    by: "Ame (Kristian Beyer)"
+    quote: "Most stuff called minimal at the time is what people call tech-house now. What does that even mean?"
+    source_url: "https://djmag.com/longreads/how-me-s-rej-inspired-new-approach-house-and-techno"
+
+  - claim: "Real minimal is Daniel Bell or very early Kompakt"
+    by: "Ame (Kristian Beyer)"
+    quote: "The whole minimal label on that music was very misleading anyway. Real minimal to me is Daniel Bell or very early Kompakt."
+    source_url: "https://djmag.com/longreads/how-me-s-rej-inspired-new-approach-house-and-techno"
+
+  - claim: "The macho EDM shooting match vs the gay club tradition"
+    by: "Caribou"
+    quote: "the dance music that I dislike the most...is the really macho, super-saw bassline, like the EDM, super-populist stuff...I'm also really aware of the whole tradition and trajectory of dance music that I love coming out of predominantly gay clubs"
+    source_url: "https://www.factmag.com/2012/10/01/it-isnt-a-particularly-macho-endeavour-dan-snaith-talks-daphni-his-reaction-to-the-edm-shooting-match/"
+
+  - claim: "Dance music has gone from culture to entertainment"
+    by: "Honey Dijon"
+    quote: "dance music or house music or techno has gone from culture to entertainment"
+    source_url: "https://mixmag.net/feature/honey-dijon-dance-music-has-been-colonised"
+
+  - claim: "Not a disco DJ, not a techno DJ, just a DJ"
+    by: "DJ Harvey"
+    quote: "I'm most definitely not a disco DJ. I'm not a techno DJ. I'm not a house music DJ. I'm just a DJ, and predominantly a dance music DJ."
+    source_url: "https://mixmag.net/feature/dj-harvey-mercury-rising-interview"
+
+  - claim: "NYC garage-y house vs Chicago drum machine-y stuff"
+    by: "Shanti Celeste"
+    quote: "I loved New York garage-y house and I love Chicago drum machine-y stuff... just that particular swing and shuffle"
+    source_url: "https://crackmagazine.net/article/long-reads/shanti-celeste-life-soul/"
+
+  - claim: "UK techno/rave is jacking; US deep house is deep"
+    by: "Shanti Celeste"
+    quote: "UK techno/rave can just be more jacking, energetic and faster in tempos in comparison to the deepness of US deep house & garage"
+    source_url: "https://crackmagazine.net/article/long-reads/shanti-celeste-life-soul/"
+
+  - claim: "Vinyl signifies effort; files are transient"
+    by: "Theo Parrish"
+    quote: "Those pieces of vinyl, they signify effort... If it's existing in the physical universe, it seems as if you care."
+    source_url: "https://crackmagazine.net/article/long-reads/theo-parrish/"
+
+  - claim: "Convenience replacing artistry"
+    by: "Theo Parrish"
+    quote: "I'm not comfortable with convenience replacing artistry"
+    source_url: "https://www.factmag.com/2012/05/07/im-not-comfortable-with-convenience-replacing-artistry-watch-an-unmissable-interview-with-theo-parrish/"
+
+  - claim: "Functional by accident is better than functional by formula"
+    by: "Caribou"
+    quote: "It's crazy in a formulaic way! It's extremely functional music, and I prefer music that's functional by accident."
+    source_url: "https://www.factmag.com/2014/09/12/im-15-years-older-than-most-of-the-people-in-clubs-but-it-doesnt-bother-me-caribou-interviewed/"
+
+  - claim: "Hip-hop is more sonically innovative than house and techno right now"
+    by: "Joy Orbison"
+    quote: "That's where you're gonna hear some crazy sonic ideas. I don't think you're hearing so much in house and techno"
+    source_url: "https://djmag.com/features/joy-orbison-still-striving-interview"
+
+  - claim: "Don't recreate Kraftwerk — push forward"
+    by: "DJ Stingray"
+    quote: "Don't recreate Kraftwerk...You should be pushing for new sounds with each and every release. Let's push it to the limit."
+    source_url: "https://crackmagazine.net/article/long-reads/the-unrelenting-energy-of-dj-stingray/"
+
+  - claim: "If the idea is good, production quality doesn't matter"
+    by: "DJ Koze"
+    quote: "if the idea is good it can move people even if the production quality is imperfect"
+    source_url: "https://ra.co/features/3234"
+
+  - claim: "Music as mistake and coincidence"
+    by: ["Nina Kraviz", "DJ Koze"]
+    nina_quote: "I like music that is almost a mistake, a coincidence."
+    koze_quote: "it's complete luck when I make music; it's like a miracle"
+    source_urls:
+      - "https://crackmagazine.net/article/long-reads/nina-kraviz-collects-stories-%D1%82%D1%80%D0%B8%D0%BF-label/"
+      - "https://xlr8r.com/features/dj-koze-behind-the-magic/"
+
+  - claim: "Sound sculpting is three-dimensional plus time"
+    by: "Theo Parrish"
+    quote: "When you're dealing with 3D work, you're dealing with volume, height and density. With sound, you're dealing with almost the same things except you're dealing with a time element too."
+    source_url: "https://crackmagazine.net/article/long-reads/theo-parrish/"
+
+  - claim: "No genre search for community"
+    by: "Eris Drew"
+    quote: "There's no genre search for community. I can't explain it, I can't put it in English, but there are these tracks that just bring the power of the community and the ritual that you're partaking in."
+    source_url: "https://crackmagazine.net/article/long-reads/eris-drew-and-octo-octa-love-vibrations/"

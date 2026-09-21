@@ -1,7 +1,7 @@
 """Resolve unmatched dj_set_tracks → spotify_id.
 
 Two stages:
-  1. CACHE  — pull from existing spotify_cache.json (no API calls). Run first, always.
+  1. CACHE  — pull from the library.db ID cache (no API calls). Run first, always.
   2. SEARCH — for tracks still unresolved, hit Spotify API. ZERO retries, instant bail on 429.
 
 Usage:
@@ -20,7 +20,6 @@ from spotipy.exceptions import SpotifyException
 from auth import get_spotify
 from db import connect
 
-CACHE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "spotify_cache.json")
 TRACK_DELAY = 5.0  # extra-conservative; user has hit bans recently
 
 
@@ -36,16 +35,16 @@ def _is_unidentified(artist: str, title: str) -> bool:
     return a in {"id", "i.d.", "unknown", "?"} or (a == "id" and t == "id")
 
 
+# The ID cache lives in library.db (spotify_id_cache). These delegate to the
+# one implementation in tracklist_scraper so there is a single writer.
 def _load_cache():
-    if not os.path.exists(CACHE_PATH):
-        return {}
-    with open(CACHE_PATH) as f:
-        return json.load(f)
+    from tracklist_scraper import _load_spotify_cache
+    return _load_spotify_cache()
 
 
 def _save_cache(cache):
-    with open(CACHE_PATH, "w") as f:
-        json.dump(cache, f)
+    """No-op: the DB-backed cache persists each key as it is assigned."""
+    return
 
 
 def cmd_cache(args) -> None:

@@ -236,6 +236,7 @@ import re
 import sys
 import unicodedata
 import spotipy
+import spotify_guard  # noqa: F401 — charges every request to the daily budget
 from spotipy.oauth2 import SpotifyOAuth
 from dotenv import load_dotenv
 
@@ -483,17 +484,24 @@ def add_tracks_to_playlist(playlist_id, new_track_ids):
         offset = 0
 
         while True:
+            # Spotify nests the track under "item"; older responses used
+            # "track". Ask for both so dedupe survives either shape.
             response = sp.playlist_tracks(
-                playlist_id, fields="items.track.id,total", limit=limit, offset=offset
+                playlist_id, fields="items(item(id),track(id)),total",
+                limit=limit, offset=offset
             )
             items = response.get("items", [])
             if not items:
                 break
             for item in items:
-                if item and item.get("track") and item["track"].get("id"):
-                    existing_ids.add(item["track"]["id"])
+                track = (item or {}).get("item") or (item or {}).get("track")
+                if track and track.get("id"):
+                    existing_ids.add(track["id"])
             offset += limit
-            if len(items) < limit:
+            # Paginate on `next`. Spotify emits short pages mid-listing, so a
+            # length check truncates the read — and a truncated dedupe set
+            # means duplicates get added.
+            if not response.get("next"):
                 break
 
         # Filter out None values and duplicates

@@ -4,8 +4,9 @@ import sys
 import logging
 import requests
 from bs4 import BeautifulSoup
-from dotenv import load_dotenv
+from dotenv import load_dotenvok
 import spotipy
+import spotify_guard  # noqa: F401 — charges every request to the daily budget
 from spotipy.oauth2 import SpotifyOAuth
 
 # Load environment variables from .env file

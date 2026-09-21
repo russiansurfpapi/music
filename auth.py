@@ -26,6 +26,11 @@ LIBRARY_SCOPE = " ".join([
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
 
+# Importing spotify_guard patches spotipy so EVERY request — including the ~90
+# direct sp.foo() calls in other scripts — is charged to the daily budget.
+import spotify_guard  # noqa: F401
+
+
 def get_spotify(scope: str = LIBRARY_SCOPE, cache_name: str = ".cache-library") -> spotipy.Spotify:
     session = requests.Session()
     return spotipy.Spotify(

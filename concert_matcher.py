@@ -17,6 +17,7 @@ from typing import Dict, List, Optional, Tuple
 
 import requests
 import spotipy
+import spotify_guard  # noqa: F401 — charges every request to the daily budget
 from spotipy.oauth2 import SpotifyOAuth
 from dotenv import load_dotenv
 

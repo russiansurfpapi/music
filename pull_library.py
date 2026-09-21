@@ -169,7 +169,8 @@ def pull_playlists(sp: spotipy.Spotify, conn) -> int:
                 for item in items:
                     _upsert_track(conn, item.get("track"), source, item.get("added_at"))
                     count += 1
-                if resp.get("next") is None or len(items) < 100:
+                # short pages appear mid-listing; trust `next` alone
+                if resp.get("next") is None:
                     break
                 offset += 100
                 time.sleep(SLEEP)

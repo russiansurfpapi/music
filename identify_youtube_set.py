@@ -117,9 +117,12 @@ def _extract_isrc(track: dict) -> str:
 
 async def shazam_identify(chunks: list[tuple[int, Path]]) -> list[dict]:
     from shazamio import Shazam
+    REFRESH_EVERY = 30  # recreate session every N chunks to avoid aiohttp SSL degradation
     shazam = Shazam()
     results = []
     for i, (t, path) in enumerate(chunks):
+        if i > 0 and i % REFRESH_EVERY == 0:
+            shazam = Shazam()  # fresh aiohttp session
         try:
             r = await shazam.recognize(str(path))
         except Exception as e:

@@ -475,14 +475,20 @@ def _clear_playlist(sp, playlist_id: str) -> None:
     current_ids: List[str] = []
     offset = 0
     while True:
+        # Spotify nests the track under "item"; older responses used "track".
+        # Ask for both — reading only "track" returned empty objects, so the
+        # clear silently removed nothing and stale tracks survived the rebuild.
         resp = sp.playlist_items(playlist_id, limit=100, offset=offset,
-                                  fields="items(track(id)),next", additional_types=("track",))
+                                  fields="items(item(id),track(id)),next",
+                                  additional_types=("track",))
         items = resp.get("items", [])
         for it in items:
-            t = it.get("track") or {}
+            t = (it or {}).get("item") or (it or {}).get("track") or {}
             if t.get("id"):
                 current_ids.append(t["id"])
-        if not resp.get("next") or len(items) < 100:
+        # `or len(items) < 100` used to be here; short pages appear
+        # mid-listing and made this stop early.
+        if not resp.get("next"):
             break
         offset += 100
     for i in range(0, len(current_ids), 100):

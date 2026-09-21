@@ -1,4 +1,4 @@
-"""Backfill dj_sets + dj_set_tracks from sets/*.html and spotify_cache.json.
+"""Backfill dj_sets + dj_set_tracks from sets/*.html and the library.db ID cache.
 
 Zero API calls. Idempotent — safe to re-run.
 
@@ -15,6 +15,7 @@ import sys
 from typing import List, Optional, Tuple
 
 from db import connect
+from artist_normalize import primary_artist, clean_title
 from tracklist_scraper import (
     _cache_key,
     _load_spotify_cache,
@@ -97,9 +98,9 @@ def upsert_dj(conn, slug: str, name: str, is_favorite: bool) -> None:
     """, (slug, name, 1 if is_favorite else 0))
 
 
-def extract_set_tracks(filepath: str, cache: dict) -> Tuple[List[Tuple[int, str, str, Optional[str]]], int]:
+def extract_set_tracks(filepath: str, cache: dict) -> Tuple[List[Tuple[int, str, str, str, str, Optional[str]]], int]:
     """Read HTML, extract tracks, resolve via cache. Returns (rows, resolved_count).
-    Each row = (position, raw_artist, raw_title, spotify_id_or_None)."""
+    Each row = (position, raw_artist, raw_title, artist, title, spotify_id_or_None)."""
     filename = os.path.basename(filepath)
     with open(filepath, "r", encoding="utf-8", errors="replace") as f:
         html = f.read()
@@ -107,29 +108,37 @@ def extract_set_tracks(filepath: str, cache: dict) -> Tuple[List[Tuple[int, str,
     rows = []
     resolved = 0
     for position, (artist, title, _src) in enumerate(tracks, start=1):
-        # Cache keys in spotify_cache.json use the ORIGINAL title (not clean_track_name),
-        # because find_spotify_track() builds the key from the raw title.
-        key = _cache_key(artist, title)
-        spotify_id = cache.get(key)
-        if spotify_id is None:
-            # Fallback: try cleaned title (older cache entries may have used it)
-            cleaned = clean_track_name(artist, title)
-            if cleaned != title:
-                spotify_id = cache.get(_cache_key(artist, cleaned))
+        # Tracklist sites concatenate features without a separator, so the
+        # scraped artist arrives as "Disclosureft. Eliza Doolittle". Normalise
+        # HERE, at the boundary, so nothing downstream has to guess. The raw
+        # strings are still written to raw_artist/raw_title as an audit trail.
+        norm_artist = primary_artist(artist) or artist
+        norm_title = clean_title(title) or title
+
+        # Cache keys use the ORIGINAL title (not clean_track_name), because
+        # find_spotify_track() builds the key from the raw title.
+        spotify_id = None
+        for a, t in ((artist, title),
+                     (artist, clean_track_name(artist, title)),
+                     (norm_artist, norm_title)):
+            spotify_id = cache.get(_cache_key(a, t))
+            if spotify_id:
+                break
         if spotify_id:
             resolved += 1
-        rows.append((position, artist, title, spotify_id))
+        rows.append((position, artist, title, norm_artist, norm_title, spotify_id))
     return rows, resolved
 
 
 def write_set_tracks(conn, set_id: str, rows: List[Tuple[int, str, str, Optional[str]]]) -> None:
     """Replace dj_set_tracks for this set."""
     conn.execute("DELETE FROM dj_set_tracks WHERE set_id = ?", (set_id,))
-    for position, artist, title, spotify_id in rows:
+    for position, artist, title, norm_artist, norm_title, spotify_id in rows:
         conn.execute("""
-            INSERT INTO dj_set_tracks (set_id, position, raw_artist, raw_title, spotify_id)
-            VALUES (?, ?, ?, ?, ?)
-        """, (set_id, position, artist, title, spotify_id))
+            INSERT INTO dj_set_tracks
+                (set_id, position, raw_artist, raw_title, artist, title, spotify_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (set_id, position, artist, title, norm_artist, norm_title, spotify_id))
 
 
 def main():
@@ -147,7 +156,7 @@ def main():
             return
 
         cache = _load_spotify_cache()
-        print(f"Loaded {len(cache)} entries from spotify_cache.json")
+        print(f"Loaded {len(cache)} cached Spotify IDs from library.db")
 
         # Seed favorite DJs first
         for slug, name in FAVORITE_DJS.items():

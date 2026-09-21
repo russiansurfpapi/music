@@ -67,3 +67,11 @@
 - `build_set_playlist.py` uses pre-resolved `spotify_id` from DB (zero API calls for resolved tracks)
 - Filters synthetic IDs: `lfm:*`, `fp:*`, and any ID not exactly 22 alphanumeric chars
 - Leading-dash video IDs (e.g., `-WQrrGreVrY`) require `--set="-ID"` syntax in argparse
+
+## Playlist creation endpoint (confirmed 2026-07-05)
+- `POST /v1/users/{user_id}/playlists` returns **403** in dev mode
+- `POST /v1/me/playlists` works — this is the only working create path
+- `sp.playlist(id)` returns `items` at top level in dev mode, NOT nested under `tracks` key
+- `sp.playlist_tracks(id)` is the reliable way to verify track counts
+- `sp.search(q='artist:X', type='track')` remains the working substitute for `artist_top_tracks` (403)
+- `sp.artist_albums()` works, `sp.album_tracks()` works, `sp.album()` works individually — sampler pattern is viable

@@ -37,7 +37,8 @@ def _current_track_ids(sp, pl_id: str) -> Set[str]:
                 tid = t["uri"].split(":")[-1]
             if tid:
                 ids.add(tid)
-        if resp.get("next") is None or len(items) < 100:
+        # short pages appear mid-listing; trust `next` alone
+        if resp.get("next") is None:
             break
         offset += 100
         time.sleep(0.6)

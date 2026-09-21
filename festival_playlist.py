@@ -9,6 +9,7 @@ import re
 import json
 import time
 import spotipy
+import spotify_guard  # noqa: F401 — charges every request to the daily budget
 from spotipy.oauth2 import SpotifyOAuth
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -292,8 +293,14 @@ def add_tracks_to_playlist(playlist_id, new_track_ids):
     """Add tracks to playlist, avoiding duplicates."""
     try:
         # Get existing tracks
-        existing = sp.playlist_tracks(playlist_id, fields="items.track.id")
-        existing_ids = {item["track"]["id"] for item in existing["items"] if item.get("track")}
+        # Spotify nests the track under "item"; older responses used "track".
+        # Ask for both so the dedupe set can never come back silently empty.
+        existing = sp.playlist_tracks(playlist_id, fields="items(item(id),track(id))")
+        existing_ids = set()
+        for entry in existing.get("items") or []:
+            track = (entry or {}).get("item") or (entry or {}).get("track")
+            if track and track.get("id"):
+                existing_ids.add(track["id"])
 
         # Filter new tracks
         valid_new = [tid for tid in new_track_ids if tid and tid not in existing_ids]

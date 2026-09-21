@@ -1,0 +1,49 @@
+{
+  "started": "2026-04-22T11:14:34.282990",
+  "target_hours": 3.0,
+  "target_tracks": 54,
+  "tracks": [
+    {
+      "artist": "P\u00e9p\u00e9 Bradock",
+      "title": "Deep Burnt",
+      "spotify_id": "lfm:200153b0d67e2cb9",
+      "genre": "house",
+      "subgenre": "deep house",
+      "rhythm": "four-on-the-floor",
+      "texture": "[\"warm/soulful\", \"groovy/funky\", \"stripped/minimal\"]",
+      "release_year": null
+    },
+    {
+      "artist": "Move D",
+      "title": "Jus House",
+      "spotify_id": "lfm:598c00623fe5813c",
+      "genre": "ambient",
+      "subgenre": "deep house",
+      "rhythm": "four-on-the-floor",
+      "texture": "[\"warm/soulful\", \"atmospheric\", \"stripped/minimal\"]",
+      "release_year": null
+    },
+    {
+      "artist": "FCL",
+      "title": "Let's Go",
+      "spotify_id": "lfm:08f8fd721643fb30",
+      "genre": "garage",
+      "subgenre": "deep house",
+      "rhythm": "2-step/shuffle",
+      "texture": "[\"warm/soulful\"]",
+      "release_year": null,
+      "picked_fork": "A"
+    },
+    {
+      "artist": "Youandewan",
+      "title": "Fool Be Cool",
+      "spotify_id": "lfm:7e0a58c1e4b69d58",
+      "genre": "house",
+      "subgenre": "deep house",
+      "rhythm": "four-on-the-floor",
+      "texture": "[\"warm/soulful\", \"stripped/minimal\"]",
+      "release_year": null,
+      "picked_fork": "A"
+    }
+  ]
+}

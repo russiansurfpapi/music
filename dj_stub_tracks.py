@@ -5,8 +5,8 @@ lastfm_status='pending', without needing further Spotify API calls.
 
 Stub rows have:
   - spotify_id (from dj_set_tracks)
-  - artist     (from raw_artist)
-  - title      (from raw_title)
+  - artist     (normalised dj_set_tracks.artist, falling back to raw_artist)
+  - title      (normalised dj_set_tracks.title, falling back to raw_title)
   - everything else NULL
   - lastfm_status='pending'
 
@@ -23,9 +23,11 @@ from db import connect
 def main():
     conn = connect()
     try:
-        # Find unique (spotify_id, raw_artist, raw_title) NOT in tracks
+        # Find unique (spotify_id, artist, title) NOT in tracks
         rows = conn.execute("""
-            SELECT DISTINCT dst.spotify_id, dst.raw_artist, dst.raw_title
+            SELECT DISTINCT dst.spotify_id,
+                   COALESCE(dst.artist, dst.raw_artist) AS artist,
+                   COALESCE(dst.title,  dst.raw_title)  AS title
             FROM dj_set_tracks dst
             LEFT JOIN tracks t ON t.spotify_id = dst.spotify_id
             WHERE dst.spotify_id IS NOT NULL
@@ -39,7 +41,7 @@ def main():
                 INSERT INTO tracks (spotify_id, title, artist, lastfm_status)
                 VALUES (?, ?, ?, 'pending')
                 ON CONFLICT(spotify_id) DO NOTHING
-            """, (r["spotify_id"], r["raw_title"], r["raw_artist"]))
+            """, (r["spotify_id"], r["title"], r["artist"]))
             if cur.rowcount:
                 n_added += 1
                 # Also record dj_set source(s)

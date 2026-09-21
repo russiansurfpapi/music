@@ -104,7 +104,8 @@ def pull_tracks(sp, pl_id: str) -> List[dict]:
                 "artist_id": artists[0]["id"] if artists else None,
                 "year": int(release) if release.isdigit() else None,
             })
-        if r.get("next") is None or len(items) < 100:
+        # short pages appear mid-listing; trust `next` alone
+        if r.get("next") is None:
             break
         offset += 100
         time.sleep(0.5)

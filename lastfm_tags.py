@@ -153,7 +153,8 @@ def promote_orphans(conn: sqlite3.Connection) -> int:
     fp:<sha1> id so repeated runs stay stable.
     """
     rows = conn.execute(
-        "SELECT DISTINCT raw_artist, raw_title FROM dj_set_tracks "
+        "SELECT DISTINCT COALESCE(artist, raw_artist) AS raw_artist, "
+        "       COALESCE(title,  raw_title)  AS raw_title FROM dj_set_tracks "
         "WHERE spotify_id IS NULL"
     ).fetchall()
 
@@ -192,7 +193,8 @@ def promote_orphans(conn: sqlite3.Connection) -> int:
         # Link *all* matching orphan rows (they may span many positions/sets).
         cur = conn.execute(
             "UPDATE dj_set_tracks SET spotify_id=? "
-            "WHERE raw_artist=? AND raw_title=? AND spotify_id IS NULL",
+            "WHERE COALESCE(artist,raw_artist)=? AND COALESCE(title,raw_title)=? "
+            "AND spotify_id IS NULL",
             (fp, raw_artist, raw_title),
         )
         linked += cur.rowcount or 0
