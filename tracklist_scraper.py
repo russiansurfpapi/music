@@ -869,10 +869,30 @@ def _get_or_create_playlist(sp, playlist_name):
             log.info(f"Created playlist: {playlist_name}")
             created = (new_pl["id"], new_pl["external_urls"]["spotify"])
             _PLAYLIST_INDEX[playlist_name.strip().lower()] = created
+            # playlist_tracks has a FK to playlists, so membership for a
+            # brand-new playlist cannot be recorded until this row exists.
+            # Without it _record_membership raised IntegrityError into a bare
+            # except and the playlist silently kept zero membership rows —
+            # 14 of 87 study playlists were in that state.
+            _register_playlist(new_pl["id"], playlist_name)
             return created
     except Exception as e:
         log.error(f"Failed to create playlist: {e}")
     return None, None
+
+
+def _register_playlist(playlist_id, name):
+    """Insert the `playlists` row for a playlist we just created."""
+    try:
+        from db import connect
+        with connect() as conn:
+            conn.execute(
+                "INSERT INTO playlists (playlist_id, name, is_managed, track_count) "
+                "VALUES (?,?,1,0) ON CONFLICT(playlist_id) DO UPDATE SET name=excluded.name",
+                (playlist_id, name))
+            conn.commit()
+    except Exception as e:
+        log.warning(f"could not register playlist {name}: {e}")
 
 
 def _item_track(entry):
@@ -991,8 +1011,11 @@ def _record_membership(playlist_id, ids):
             conn.execute("UPDATE playlists SET track_count=? WHERE playlist_id=?",
                          (len(ids), playlist_id))
             conn.commit()
-    except Exception:
-        pass
+    except Exception as e:
+        # Non-fatal by design — accounting must not break the work it accounts
+        # for — but it must not be invisible either. A swallowed FK violation
+        # here is what left 14 playlists with no membership recorded.
+        log.warning(f"could not record membership for {playlist_id}: {e}")
 
 
 def _sync_playlist_tracks(sp, playlist_id, track_ids, existing=None):

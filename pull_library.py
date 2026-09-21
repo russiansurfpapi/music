@@ -61,7 +61,11 @@ def _paged(call, *, items_key: str = "items", **kwargs) -> Iterable[dict]:
             return
         for it in items:
             yield it
-        if len(items) < PAGE or resp.get("next") is None:
+        # Paginate on `next` alone. Spotify emits short pages mid-listing, so
+        # `len(items) < PAGE` stopped the read early and silently truncated the
+        # library — the same defect that made the playlist catalogue read 547
+        # of 1,546. This file was missed when the others were fixed.
+        if resp.get("next") is None:
             return
         offset += PAGE
         time.sleep(SLEEP)

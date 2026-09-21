@@ -294,3 +294,45 @@ it is still paced. Sleeping in call sites was tried and missed the ~90 direct
 SPOTIFY_MIN_INTERVAL=1.5 python3 ...   # slower
 SPOTIFY_BREATHER_EVERY=0 python3 ...   # disable the breather
 ```
+
+## Four more instances of the same two bugs (Sept 2026)
+
+Auditing for the wrong-track bug found it in three more places, plus the
+truncating paginator the earlier sweep missed.
+
+| file | defect | why it mattered |
+|---|---|---|
+| `resolve_synthetic_ids.py` | unverified `items[0]` written to `spotify_id_cache` | this is the script the docs tell you to run for the 809 unresolved IDs — running it would have re-created the 158-entry corruption wholesale |
+| `resolve_dj_tracks.py` | tried artist overlap, then `return items[0]["id"]` anyway | writes to both `spotify_id_cache` and `dj_set_tracks` |
+| `artist_influences.py` | `return items[0]["id"]` after exact + substring miss | attributed influences to whoever Spotify ranked first |
+| `pull_library.py` | `if len(items) < PAGE or next is None` | the documented short-page bug, still live here — silently truncated the library pull |
+
+All four now use `_is_same_track` or return `None`. The ISRC lookup in
+`resolve_dj_tracks.py` still takes `items[0]` and is *correct* — an ISRC is a
+unique recording identifier, so the first hit is the only hit.
+
+Still unverified, lower blast radius, not fixed: `virgil.py` (checks artist
+*or* title, so a title-only match can return the wrong artist) and
+`1003scraper.py` (searches a combined string with no artist/title split, so
+there is nothing to verify against).
+
+## Membership was silently not recorded for new playlists
+
+`playlist_tracks` has a foreign key to `playlists`, and `_get_or_create_playlist`
+created the playlist on Spotify without inserting the `playlists` row. So
+`_record_membership` raised `IntegrityError` straight into a bare `except` and
+the playlist kept **zero** membership rows. `track_count` still looked right,
+because a later catalogue refresh filled it from Spotify's own count — which is
+what made this invisible.
+
+**14 of 87 study playlists were in that state**, which is most of what looked
+like 1,009 uncategorised tracks. It was a reporting artifact: the tracks were on
+Spotify the whole time.
+
+- `_get_or_create_playlist` now registers the row at creation.
+- `_record_membership` still never raises, but logs a warning instead of
+  swallowing in silence.
+- Backfilled the 14 from the same DB query that built them — no API calls.
+
+Orphans went 1,009 → 369, and all 369 are subgenres genuinely under
+`--min-tracks 25` (ballroom 24, tropical house 22, garage house 20 …).

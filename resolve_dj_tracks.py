@@ -19,6 +19,7 @@ from spotipy.exceptions import SpotifyException
 
 from auth import get_spotify
 from db import connect
+from tracklist_scraper import _is_same_track
 
 TRACK_DELAY = 5.0  # extra-conservative; user has hit bans recently
 
@@ -118,7 +119,14 @@ def _search_track(sp, artist: str, title: str):
                 names = " ".join(x["name"].lower() for x in it.get("artists", []))
                 if a and a in names:
                     return it["id"]
-            return items[0]["id"]
+            # No artist overlap: fall back to the shared verifier rather than
+            # items[0]. Returning the top hit regardless is how a High Contrast
+            # jungle mix became Kid Cudi's "Maui Wowie" — and this writes to
+            # both spotify_id_cache and dj_set_tracks.
+            for it in items:
+                if _is_same_track(artist, title, it):
+                    return it["id"]
+            return None
     return None
 
 

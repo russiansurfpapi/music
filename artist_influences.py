@@ -155,7 +155,10 @@ def _find_artist_id(sp, artist_name):
         for a in items:
             if name_lower in a["name"].lower() or a["name"].lower() in name_lower:
                 return a["id"]
-        return items[0]["id"]
+        # Exact and substring matches both missed. Returning the top hit here
+        # attributes influences to whoever Spotify ranked first; no artist is
+        # better than the wrong artist.
+        return None
     except Exception:
         return None
 

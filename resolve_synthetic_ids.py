@@ -26,7 +26,7 @@ import time
 from spotipy.exceptions import SpotifyException
 
 from artist_normalize import primary_artist, clean_title
-from tracklist_scraper import _load_spotify_cache, _cache_key
+from tracklist_scraper import _is_same_track, _load_spotify_cache, _cache_key
 from auth import get_spotify
 from db import connect
 
@@ -106,8 +106,12 @@ def main():
         items = ((res or {}).get("tracks") or {}).get("items") or []
         # Both branches write straight through to library.db, so a ban
         # mid-run can never lose a resolved ID or re-search a dead end.
-        if items and items[0].get("id"):
-            cache[key] = items[0]["id"]
+        # Verify the hit is the track asked for. Taking items[0] blind is what
+        # put 158 wrong IDs in this same cache; this script writes straight to
+        # it, so an unverified hit here re-creates that corruption wholesale.
+        match = next((it for it in items if _is_same_track(a, t, it)), None)
+        if match and match.get("id"):
+            cache[key] = match["id"]
             hits += 1
         else:
             cache.mark_miss(key)
