@@ -28,10 +28,14 @@ import sys
 import csv
 import json
 import time
+import unicodedata
 import logging
 import argparse
 from urllib.parse import quote_plus
 import requests
+from spotipy.exceptions import SpotifyException
+
+import spotify_guard  # noqa: F401 — charges every request to the daily budget
 from bs4 import BeautifulSoup, NavigableString
 from dotenv import load_dotenv
 from playwright.sync_api import sync_playwright
@@ -590,7 +594,6 @@ def get_spotify():
     )
 
 
-SPOTIFY_CACHE_PATH = os.path.join(os.path.dirname(__file__), "spotify_cache.json")
 BATCH_SIZE = 50          # search this many tracks, then add to playlist
 BATCH_PAUSE = 120        # seconds to pause between batches (doubled to avoid sustained-rate 429)
 TRACK_DELAY = 4          # seconds between each search call (~8 calls per 30s window)
@@ -600,20 +603,98 @@ class SpotifyRateLimited(Exception):
     pass
 
 
+class _SpotifyIdCache(dict):
+    """Artist/title -> Spotify ID, backed by the `spotify_id_cache` table.
+
+    Behaves like the plain dict the JSON file used to produce, so every
+    existing call site keeps working, but writes land in library.db. Assigning
+    a key persists it immediately, which is what makes a mid-run rate-limit
+    ban non-destructive.
+
+    Known misses (searched, no match) are held in `.misses` and stored as rows
+    with a NULL spotify_id, so a re-run never pays for the same dead end.
+    """
+
+    def __init__(self, rows):
+        super().__init__((k, v) for k, v in rows if v is not None)
+        self.misses = {k for k, v in rows if v is None}
+
+    def _persist(self, key, spotify_id):
+        from db import connect
+        with connect() as conn:
+            conn.execute(
+                "INSERT INTO spotify_id_cache (cache_key, spotify_id, searched_at) "
+                "VALUES (?,?,CURRENT_TIMESTAMP) "
+                "ON CONFLICT(cache_key) DO UPDATE SET "
+                "  spotify_id=excluded.spotify_id, searched_at=excluded.searched_at",
+                (key, spotify_id))
+            conn.commit()
+
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value)
+        self._persist(key, value)
+
+    def mark_miss(self, key):
+        """Record that this key was searched and Spotify returned nothing."""
+        self.misses.add(key)
+        self._persist(key, None)
+
+
 def _load_spotify_cache():
-    if os.path.exists(SPOTIFY_CACHE_PATH):
-        with open(SPOTIFY_CACHE_PATH, "r") as f:
-            return json.load(f)
-    return {}
+    """Load the ID cache from library.db (was spotify_cache.json)."""
+    from db import connect
+    with connect() as conn:
+        rows = conn.execute(
+            "SELECT cache_key, spotify_id FROM spotify_id_cache").fetchall()
+    return _SpotifyIdCache([(r[0], r[1]) for r in rows])
 
 
 def _save_spotify_cache(cache):
-    with open(SPOTIFY_CACHE_PATH, "w") as f:
-        json.dump(cache, f)
+    """No-op: writes are persisted per-key on assignment.
+
+    Kept so existing callers do not need editing, and so a crash between
+    "found the ID" and "finished the batch" can no longer lose it.
+    """
+    return
 
 
 def _cache_key(artist, title):
     return f"{artist.strip().lower()}||{title.strip().lower()}"
+
+
+_MATCH_STOP = {"the", "a", "an", "and", "feat", "ft", "featuring", "with", "vs",
+               "versus", "presents", "pres", "dj", "mr", "x", "remix", "mix", "edit"}
+
+
+def _match_tokens(s):
+    s = unicodedata.normalize("NFKD", (s or "").lower())
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    s = re.sub(r"[^a-z0-9]+", " ", s)
+    return {w for w in s.split() if w and w not in _MATCH_STOP and len(w) > 1}
+
+
+def _is_same_track(artist, title, item):
+    """Is this search hit actually the track we asked for?
+
+    Spotify ranks *something* first for every query. Taking `items[0]` blind
+    is how a High Contrast jungle mix became Kid Cudi's "Maui Wowie" — and the
+    cache then served that as truth to every later run. 158 entries were wrong
+    this way; see repair_cache_mismatches.py.
+
+    Artist is the reliable signal. Titles legitimately differ by remix suffix
+    ("Stranger(DJ BORINGremix)" vs "Stranger - DJ BORING Extended Mix"), so a
+    strong title agreement is accepted as a fallback for tracklists that credit
+    the remixer in the artist field.
+    """
+    want_a = _match_tokens(artist)
+    got_a = set()
+    for a in item.get("artists", []):
+        got_a |= _match_tokens(a.get("name"))
+    if want_a & got_a:
+        return True
+    want_t, got_t = _match_tokens(title), _match_tokens(item.get("name"))
+    shared = want_t & got_t
+    return bool(shared) and len(shared) >= max(1, min(len(want_t), len(got_t)) // 2)
 
 
 def find_spotify_track(sp, artist, title, cache):
@@ -632,10 +713,17 @@ def find_spotify_track(sp, artist, title, cache):
     ]
     for q in queries:
         try:
-            results = sp.search(q=q, type="track", limit=1)
-            items = results.get("tracks", {}).get("items", [])
-            if items:
-                tid = items[0]["id"]
+            results = sp.search(q=q, type="track", limit=5)
+            items = results.get("tracks", {}).get("items", []) or []
+            # Prefer an exact title match before any fuzzy acceptance, so a
+            # request for "Hell suite, Pt. I" cannot settle for "Pt. II" just
+            # because the artist agrees.
+            want_t = _match_tokens(title)
+            ranked = sorted(
+                (i for i in items if _is_same_track(artist, title, i)),
+                key=lambda i: 0 if _match_tokens(i.get("name")) == want_t else 1)
+            if ranked:
+                tid = ranked[0]["id"]
                 cache[key] = tid
                 return tid
         except Exception as e:
@@ -647,18 +735,126 @@ def find_spotify_track(sp, artist, title, cache):
     return None
 
 
-def _get_or_create_playlist(sp, playlist_name):
-    """Find or create a playlist. Returns (playlist_id, playlist_url) or (None, None)."""
-    # Find existing
+# name.lower() -> (playlist_id, url). Built once per process; a full scan of a
+# 1500-playlist account is ~31 requests, and rescanning per lookup is what
+# tripped Spotify's QUOTA_EXCEEDED during bulk builds.
+_PLAYLIST_INDEX = None
+
+
+# A short 429 is worth waiting out. A long Retry-After means the app is in an
+# extended quota cooldown (Spotify hands out multi-hour bans to dev-mode apps
+# that burn through the window) — sleeping through that would hang the process
+# for the better part of a day, so bail and let the caller resume later.
+MAX_RETRY_AFTER = 120
+
+
+def _spotify_call(fn, *args, **kwargs):
+    """Call a spotipy method under the daily budget, honouring Retry-After.
+
+    Budget accounting is NOT done here — auth.py patches spotipy's
+    `_internal_call`, which is the true HTTP chokepoint and catches the ~90
+    direct `sp.foo()` calls elsewhere in the repo that never reach this
+    function. Charging in both places would double-count.
+    """
+    from spotify_budget import note_429
+
+    for attempt in range(6):
+        try:
+            return fn(*args, **kwargs)
+        except SpotifyException as e:
+            if e.http_status != 429 or attempt == 5:
+                raise
+            wait = int((e.headers or {}).get("Retry-After", 5)) + 1
+            if wait > MAX_RETRY_AFTER:
+                until = note_429(wait)
+                hours = wait / 3600
+                raise RuntimeError(
+                    f"Spotify quota exceeded — Retry-After is {wait}s (~{hours:.1f}h). "
+                    f"Recorded a cooldown until {until}; later runs refuse to call "
+                    f"rather than spend a request rediscovering this. "
+                    f"Re-run after that time — nothing is lost."
+                ) from e
+            log.warning(f"  429 from Spotify — sleeping {wait}s (attempt {attempt + 1}/5)")
+            time.sleep(wait)
+    raise RuntimeError("unreachable")
+
+
+def _index_from_db():
+    """Playlist name -> (id, url) straight from the `playlists` table.
+
+    sync_playlists.py keeps that table current, so the 17 API pages a live
+    scan costs are pure waste on every build. None if unpopulated.
+    """
+    try:
+        from db import connect
+        with connect() as conn:
+            rows = conn.execute("SELECT playlist_id, name FROM playlists").fetchall()
+    except Exception:
+        return None
+    if not rows:
+        return None
+    return {r["name"].strip().lower():
+            (r["playlist_id"],
+             f"https://open.spotify.com/playlist/{r['playlist_id']}")
+            for r in rows if r["name"]}
+
+
+def _build_playlist_index(sp):
+    """Page through every playlist the user owns, once."""
+    index = {}
     offset = 0
     while True:
-        page = sp.current_user_playlists(limit=50, offset=offset)
-        for pl in page["items"]:
-            if pl and pl.get("name", "").strip().lower() == playlist_name.strip().lower():
-                return pl["id"], pl["external_urls"]["spotify"]
-        if len(page["items"]) < 50:
+        page = _spotify_call(sp.current_user_playlists, limit=50, offset=offset)
+        items = page.get("items") or []
+        for pl in items:
+            if pl and pl.get("name"):
+                key = pl["name"].strip().lower()
+                # First occurrence wins — matches the old scan order.
+                index.setdefault(key, (pl["id"], pl["external_urls"]["spotify"]))
+        # Paginate on `next`, not page length — Spotify emits 49-item pages
+        # mid-listing, and stopping early truncates the index, which makes an
+        # existing playlist look absent and gets a duplicate created.
+        if not page.get("next") or not items:
             break
         offset += 50
+        if offset > 5000:
+            log.warning("playlist paging hit the safety cap at 5000")
+            break
+    log.info(f"Indexed {len(index)} playlists")
+    return index
+
+
+def reset_playlist_index():
+    """Drop the cached index (call if playlists were renamed out of band)."""
+    global _PLAYLIST_INDEX
+    _PLAYLIST_INDEX = None
+
+
+def _get_or_create_playlist(sp, playlist_name):
+    """Find or create a playlist. Returns (playlist_id, playlist_url) or (None, None)."""
+    global _PLAYLIST_INDEX
+    if _PLAYLIST_INDEX is None:
+        # Prefer the DB mirror (0 requests); fall back to scanning the account.
+        _PLAYLIST_INDEX = _index_from_db()
+        if _PLAYLIST_INDEX is None:
+            _PLAYLIST_INDEX = _build_playlist_index(sp)
+        else:
+            log.info(f"Playlist index from library.db "
+                     f"({len(_PLAYLIST_INDEX)} playlists, 0 API requests)")
+
+    key = playlist_name.strip().lower()
+    hit = _PLAYLIST_INDEX.get(key)
+    if hit:
+        return hit
+
+    # A miss against the DB mirror is not proof the playlist is absent — it may
+    # just be stale. Confirm live once before creating a duplicate.
+    if "__live__" not in _PLAYLIST_INDEX:
+        _PLAYLIST_INDEX = _build_playlist_index(sp)
+        _PLAYLIST_INDEX["__live__"] = ("", "")
+        hit = _PLAYLIST_INDEX.get(key)
+        if hit:
+            return hit
 
     # Create via /me/playlists (works in dev mode)
     try:
@@ -671,51 +867,168 @@ def _get_or_create_playlist(sp, playlist_name):
         if resp.status_code == 201:
             new_pl = resp.json()
             log.info(f"Created playlist: {playlist_name}")
-            return new_pl["id"], new_pl["external_urls"]["spotify"]
+            created = (new_pl["id"], new_pl["external_urls"]["spotify"])
+            _PLAYLIST_INDEX[playlist_name.strip().lower()] = created
+            return created
     except Exception as e:
         log.error(f"Failed to create playlist: {e}")
     return None, None
 
 
-def _add_tracks_to_playlist(sp, playlist_id, track_ids):
-    """Add tracks to playlist, skipping duplicates."""
+def _item_track(entry):
+    """Pull the track object out of a playlist-items entry.
+
+    Spotify now nests it under "item"; older responses used "track". Accept
+    either so a shape change can never silently empty the dedupe set.
+    """
+    if not entry:
+        return None
+    return entry.get("item") or entry.get("track")
+
+
+def playlist_existing_ids(sp, playlist_id):
+    """Return the set of track IDs already on a playlist.
+
+    Requests both `item` and `track` sub-objects so it survives either
+    response shape. A previous version asked for `items.track.id` only, which
+    Spotify answers with empty objects — the dedupe set came back empty and
+    every rebuild re-added the whole playlist.
+    """
     existing = set()
     offset = 0
     while True:
-        for attempt in range(3):
-            try:
-                resp = sp.playlist_tracks(playlist_id, fields="items.track.id", limit=100, offset=offset)
-                break
-            except Exception as e:
-                if attempt < 2:
-                    log.warning(f"  Timeout reading playlist (attempt {attempt+1}), retrying in 10s...")
-                    time.sleep(10)
-                else:
-                    raise
-        items = resp.get("items", [])
+        resp = _spotify_call(
+            sp.playlist_tracks,
+            playlist_id,
+            fields="items(item(id),track(id)),next",
+            limit=100,
+            offset=offset,
+        )
+        items = resp.get("items") or []
         if not items:
             break
-        for item in items:
-            if item and item.get("track") and item["track"].get("id"):
-                existing.add(item["track"]["id"])
+        for entry in items:
+            track = _item_track(entry)
+            if track and track.get("id"):
+                existing.add(track["id"])
         offset += 100
-        if len(items) < 100:
+        # Paginate on `next`. Spotify emits short pages mid-listing, so a
+        # length check truncates the read — and a truncated dedupe set
+        # means duplicates get added.
+        if not resp.get("next"):
             break
+    return existing
+
+
+def _remove_tracks_from_playlist(sp, playlist_id, track_ids):
+    """Remove specific track IDs from a playlist (100 at a time).
+
+    Updates `playlist_tracks` too. Only `_sync_playlist_tracks` used to record
+    membership, so calling this helper directly left the DB claiming tracks the
+    playlist no longer held — and `cached_membership` would then hand that stale
+    set to the next run as if it were fresh.
+    """
+    ids = [t for t in track_ids if t]
+    for i in range(0, len(ids), 100):
+        _spotify_call(sp.playlist_remove_all_occurrences_of_items,
+                      playlist_id, ids[i:i + 100])
+    _forget_membership(playlist_id, ids)
+    return len(ids)
+
+
+def _forget_membership(playlist_id, removed_ids):
+    """Drop removed tracks from the stored membership for one playlist."""
+    if not removed_ids:
+        return
+    try:
+        from db import connect
+        with connect() as conn:
+            conn.executemany(
+                "DELETE FROM playlist_tracks WHERE playlist_id=? AND spotify_id=?",
+                [(playlist_id, i) for i in removed_ids])
+            conn.execute(
+                "UPDATE playlists SET track_count = "
+                "(SELECT COUNT(*) FROM playlist_tracks WHERE playlist_id=?) "
+                "WHERE playlist_id=?", (playlist_id, playlist_id))
+            conn.commit()
+    except Exception:
+        pass  # accounting must never break the work it accounts for
+
+
+def cached_membership(playlist_id):
+    """Membership from library.db, or None if we cannot trust it.
+
+    Trustworthy only when `playlists.snapshot_id` was refreshed this run
+    (sync_playlists.sync_list) — Spotify changes that value iff the contents
+    changed, so a match means re-reading would return exactly these rows.
+    """
+    try:
+        from db import connect
+        with connect() as conn:
+            fresh = conn.execute(
+                "SELECT 1 FROM playlists WHERE playlist_id=? AND snapshot_id "
+                "IS NOT NULL", (playlist_id,)).fetchone()
+            if not fresh:
+                return None
+            rows = conn.execute(
+                "SELECT spotify_id FROM playlist_tracks WHERE playlist_id=?",
+                (playlist_id,)).fetchall()
+    except Exception:
+        return None
+    return {r[0] for r in rows} if rows else None
+
+
+def _record_membership(playlist_id, ids):
+    """Keep playlist_tracks in step with a write we just made."""
+    try:
+        from db import connect
+        with connect() as conn:
+            conn.execute("DELETE FROM playlist_tracks WHERE playlist_id=?",
+                         (playlist_id,))
+            conn.executemany(
+                "INSERT OR IGNORE INTO playlist_tracks (playlist_id, spotify_id) "
+                "VALUES (?,?)", [(playlist_id, i) for i in ids])
+            conn.execute("UPDATE playlists SET track_count=? WHERE playlist_id=?",
+                         (len(ids), playlist_id))
+            conn.commit()
+    except Exception:
+        pass
+
+
+def _sync_playlist_tracks(sp, playlist_id, track_ids, existing=None):
+    """Make the playlist contain exactly `track_ids`.
+
+    Returns (added, removed). Only the difference is written, so a playlist
+    that is already correct costs zero write requests.
+    """
+    wanted = [t for t in dict.fromkeys(t for t in track_ids if t)]
+    wanted_set = set(wanted)
+    if existing is None:
+        existing = playlist_existing_ids(sp, playlist_id)
+
+    stale = existing - wanted_set
+    if stale:
+        _remove_tracks_from_playlist(sp, playlist_id, sorted(stale))
+
+    missing = [t for t in wanted if t not in existing]
+    for i in range(0, len(missing), 100):
+        _spotify_call(sp.playlist_add_items, playlist_id, missing[i:i + 100])
+
+    if stale or missing:
+        _record_membership(playlist_id, wanted)
+    return len(missing), len(stale)
+
+
+def _add_tracks_to_playlist(sp, playlist_id, track_ids):
+    """Add tracks to playlist, skipping duplicates."""
+    existing = playlist_existing_ids(sp, playlist_id)
 
     new_ids = [tid for tid in track_ids if tid and tid not in existing]
     if new_ids:
         for i in range(0, len(new_ids), 100):
-            for attempt in range(3):
-                try:
-                    sp.playlist_add_items(playlist_id, new_ids[i:i + 100])
-                    break
-                except Exception as e:
-                    if attempt < 2:
-                        log.warning(f"  Timeout adding tracks (attempt {attempt+1}), retrying in 10s...")
-                        time.sleep(10)
-                    else:
-                        raise
+            _spotify_call(sp.playlist_add_items, playlist_id, new_ids[i:i + 100])
         log.info(f"  Added {len(new_ids)} tracks to playlist")
+        _record_membership(playlist_id, sorted(existing | set(new_ids)))
     return len(new_ids)
 
 
