@@ -57,17 +57,31 @@ def ydl_download(url: str, out_path: Path) -> dict:
         ["yt-dlp", "-j", "--no-warnings", url], text=True
     )
     meta = json.loads(meta_raw)
-    # Download as wav
-    subprocess.run(
-        [
-            "yt-dlp", "-x", "--audio-format", "wav",
-            "--postprocessor-args", "-ac 1 -ar 16000",
-            "-o", str(out_path.with_suffix(".%(ext)s")),
-            "--no-warnings", url,
-        ],
-        check=True,
-    )
-    return meta
+    # Download as wav.
+    #
+    # Pin the audio format. Left to itself yt-dlp picks 251 (opus) via the
+    # visionos player client, and YouTube answers that media URL with
+    # HTTP 403 — which killed 2 of 4 sets in the Nicolas Jaar batch while the
+    # videos were public and format 140 downloaded fine. 140 (m4a, 129k) is
+    # plenty for 16kHz mono fingerprinting; the fallbacks keep working if a
+    # video genuinely lacks it.
+    fmt = "140/bestaudio[ext=m4a]/bestaudio/best"
+    last = None
+    for attempt_fmt in (fmt, None):          # None = yt-dlp's own choice
+        cmd = ["yt-dlp", "-x", "--audio-format", "wav",
+               "--postprocessor-args", "-ac 1 -ar 16000",
+               "-o", str(out_path.with_suffix(".%(ext)s")),
+               "--no-warnings"]
+        if attempt_fmt:
+            cmd += ["-f", attempt_fmt]
+        cmd.append(url)
+        try:
+            subprocess.run(cmd, check=True)
+            return meta
+        except subprocess.CalledProcessError as e:
+            last = e
+            print(f"  download failed with format={attempt_fmt or 'auto'}; retrying")
+    raise last
 
 
 def chunk_wav(src: Path, out_dir: Path, chunk_sec: int, step_sec: int) -> list[tuple[int, Path]]:
@@ -118,16 +132,27 @@ def _extract_isrc(track: dict) -> str:
 async def shazam_identify(chunks: list[tuple[int, Path]]) -> list[dict]:
     from shazamio import Shazam
     REFRESH_EVERY = 30  # recreate session every N chunks to avoid aiohttp SSL degradation
+    RECOGNIZE_TIMEOUT = 45  # seconds; a chunk is 20s of audio, so this is generous
     shazam = Shazam()
     results = []
     for i, (t, path) in enumerate(chunks):
         if i > 0 and i % REFRESH_EVERY == 0:
             shazam = Shazam()  # fresh aiohttp session
         try:
-            r = await shazam.recognize(str(path))
+            # recognize() has no internal timeout. Without wait_for, a single
+            # unanswered request blocks the whole run forever — the try/except
+            # cannot help, because a hang is not an exception. One Jaar set
+            # stalled at chunk 162 of 178 this way and lost the run's results,
+            # which are only written at the end.
+            r = await asyncio.wait_for(shazam.recognize(str(path)), timeout=RECOGNIZE_TIMEOUT)
         except Exception as e:
-            print(f"  [{t//60:02d}:{t%60:02d}] error: {e}", file=sys.stderr)
+            kind = "timeout" if isinstance(e, asyncio.TimeoutError) else e
+            print(f"  [{t//60:02d}:{t%60:02d}] error: {kind}", file=sys.stderr)
             results.append({"t": t, "track": None})
+            # A failed request tends to leave the aiohttp session unusable, so
+            # the next chunk fails too and the run degrades to all-misses.
+            # Start a clean one rather than limping on.
+            shazam = Shazam()
             await asyncio.sleep(1.5)
             continue
         track = r.get("track")

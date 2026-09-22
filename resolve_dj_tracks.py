@@ -212,6 +212,19 @@ def cmd_isrc(args) -> None:
 
         searched = 0
         found = 0
+        # Cache writes are buffered and applied only after conn.commit().
+        # `cache[key] = ...` writes through on its own connection, and doing
+        # that while `conn` holds uncommitted UPDATEs self-deadlocks: SQLite
+        # allows a single writer, and busy_timeout cannot help when the
+        # blocker is this same process. It crashed the run with
+        # "database is locked".
+        pending_cache = []
+
+        def _flush_cache():
+            for k, v in pending_cache:
+                cache[k] = v
+            pending_cache.clear()
+
         for r in rows:
             isrc = r["isrc"]
             try:
@@ -233,17 +246,17 @@ def cmd_isrc(args) -> None:
                     "UPDATE dj_set_tracks SET spotify_id=? WHERE isrc=? AND spotify_id IS NULL",
                     (sid, isrc),
                 )
-                key = _cache_key(r["raw_artist"], r["raw_title"])
-                cache[key] = sid
+                pending_cache.append(
+                    (_cache_key(r["raw_artist"], r["raw_title"]), sid))
             searched += 1
             if searched % 10 == 0:
                 conn.commit()
-                _save_cache(cache)
+                _flush_cache()
                 print(f"  [{searched}/{len(rows)}] found {found} so far")
             time.sleep(TRACK_DELAY)
 
         conn.commit()
-        _save_cache(cache)
+        _flush_cache()
         conn.execute("""
             UPDATE dj_sets SET resolved_count = (
                 SELECT COUNT(*) FROM dj_set_tracks
