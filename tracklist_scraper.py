@@ -971,6 +971,7 @@ def _forget_membership(playlist_id, removed_ids):
                 "(SELECT COUNT(*) FROM playlist_tracks WHERE playlist_id=?) "
                 "WHERE playlist_id=?", (playlist_id, playlist_id))
             conn.commit()
+        _forget_from_mongo(playlist_id, removed_ids)
     except Exception:
         pass  # accounting must never break the work it accounts for
 
@@ -998,6 +999,38 @@ def cached_membership(playlist_id):
     return {r[0] for r in rows} if rows else None
 
 
+def _mirror_to_mongo(playlist_id, playlist_name, ids):
+    """Mirror membership into the MongoDB catalogue, keyed by subgenre.
+
+    Hooked here because this is the one function every membership change passes
+    through. Policing call sites was tried in this repo for the Spotify budget
+    and missed ~90 of them.
+
+    Never raises and never blocks the write it mirrors: library.db stays the
+    source of truth, and `mongo_catalog.sync` repairs any drift.
+    """
+    if not playlist_name:
+        return
+    try:
+        import mongo_catalog
+        mongo_catalog.record_playlist(playlist_id, playlist_name, ids)
+    except Exception as e:
+        log.warning(f"mongo mirror skipped for {playlist_name}: {e}")
+
+
+def _forget_from_mongo(playlist_id, removed_ids):
+    """Drop a playlist from the removed tracks' membership lists."""
+    if not removed_ids:
+        return
+    try:
+        import mongo_catalog
+        mongo_catalog.tracks().update_many(
+            {"_id": {"$in": list(removed_ids)}},
+            {"$pull": {"playlists": {"playlist_id": playlist_id}}})
+    except Exception as e:
+        log.warning(f"mongo un-mirror skipped: {e}")
+
+
 def _record_membership(playlist_id, ids):
     """Keep playlist_tracks in step with a write we just made."""
     try:
@@ -1010,7 +1043,10 @@ def _record_membership(playlist_id, ids):
                 "VALUES (?,?)", [(playlist_id, i) for i in ids])
             conn.execute("UPDATE playlists SET track_count=? WHERE playlist_id=?",
                          (len(ids), playlist_id))
+            name = conn.execute("SELECT name FROM playlists WHERE playlist_id=?",
+                                (playlist_id,)).fetchone()
             conn.commit()
+        _mirror_to_mongo(playlist_id, name[0] if name else None, ids)
     except Exception as e:
         # Non-fatal by design — accounting must not break the work it accounts
         # for — but it must not be invisible either. A swallowed FK violation
