@@ -52,3 +52,66 @@
 
 ## Dedupe gotcha
 String-exact dedupe on `(artist, title)` misses remix variants of the same track (e.g., "X" vs "X (Remix)"). Acceptable for first pass; improve with substring/fuzzy match if noise becomes a problem.
+
+## Finding the sets (`discover_dj_sets.py`, Sept 2026)
+
+Supersedes `discover_sets.py`, which asked Claude a yes/no question per SerpAPI
+result. Asked for 10 Nicolas Jaar sets it returned 4; the same catalogue
+searched this way yielded 18 distinct events.
+
+```bash
+python3 discover_dj_sets.py "Nicolas Jaar" --dj nicolas-jaar
+python3 discover_dj_sets.py "Four Tet" --kinds dj_set,live --min-minutes 40
+python3 discover_dj_sets.py "Peggy Gou" --dj peggy-gou --run
+```
+
+- **Search is `yt-dlp ytsearch`, not SerpAPI** — free, and durations are real.
+  SerpAPI's rich snippets left duration blank on most rows, so the length
+  filter could not run at all.
+- **21 query angles.** The venue/festival and recency angles matter more than
+  they look: generic queries return the same famous uploads repeatedly, and it
+  was the venue angle that surfaced Bar 25, 10 Days Off, Bozar and the
+  artist's own radio project — four events no generic query found.
+- **The LLM assigns an `event_key`, not a yes/no.** One event is uploaded many
+  times: Jaar's 2012 Essential Mix appeared 9 times in one sweep, Sonar 2012
+  five times. A yes/no filter says yes to all of them. Longest upload of each
+  key wins, because ad-trimmed and partial re-uploads are common.
+- **It also marks `owned`** — the same event under a different video ID. ID
+  matching alone is not enough: the first run returned the Essential Mix,
+  RA.500, RA.211 and Boiler Room NYC as new finds when all four were already
+  in the library. The owned set titles go into the prompt.
+- `--kinds` defaults to `dj_set` only. See below for why.
+
+## Live performance is not a DJ set
+
+Fingerprinting recognises *released recordings*, so an artist performing their
+own material returns almost nothing. Measured on the same artist, same pipeline:
+
+| set | yield |
+|---|---|
+| Resident Advisor RA.211 (radio mix) | 16 tracks, 71% |
+| BBC Essential Mix (radio mix) | 27 tracks, 63% |
+| Sonar 2012 (live performance) | **1 track, 3%** |
+| Sodra Teatern (live performance) | **3 tracks, 6%** |
+
+A 20x spread. Filter on this before spending an hour, and treat anything billed
+"Live" as suspect even when the artist is a DJ.
+
+## Throttles, and what each one looks like
+
+- **Shazam** cuts off around ~1,500 queries in a session: every `recognize()`
+  then times out. Recreating the aiohttp session does not help — it is
+  IP-level. Spread large batches across days.
+- **YouTube** answers "Sign in to confirm you're not a bot" after a dozen
+  back-to-back downloads, and throttles bandwidth to ~100KiB/s before that.
+  Sleep 45s between sets. It clears overnight.
+- **yt-dlp picks a format that 403s.** Left alone it chooses 251 (opus, via the
+  visionos player client) and YouTube refuses that media URL while format 140
+  (m4a) downloads fine. `ydl_download` pins `140/bestaudio[ext=m4a]/...`.
+
+## Results are only written at the end of a set
+
+`identify_youtube_set.py` writes `dj_set_tracks` after the last chunk, so a
+throttle or a kill loses the whole run. That has cost two partial runs of a
+337-minute set (~170 chunks each time). **Incremental writes are the fix and
+are not done yet.**
