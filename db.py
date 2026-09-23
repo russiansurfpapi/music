@@ -204,6 +204,12 @@ _ADDED_COLUMNS = [
     ("dj_set_tracks", "title", "TEXT"),
     ("playlists", "snapshot_id", "TEXT"),
     ("spotify_api_usage", "requests_at_ban", "INTEGER"),
+    # Fingerprinting writes incrementally, so a run that a throttle cut short
+    # leaves real rows behind. Without these two a partial set is
+    # indistinguishable from a complete one: chunks_done < chunks_total says
+    # "re-run this".
+    ("dj_sets", "chunks_done", "INTEGER"),
+    ("dj_sets", "chunks_total", "INTEGER"),
 ]
 
 

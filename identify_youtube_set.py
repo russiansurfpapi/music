@@ -129,10 +129,15 @@ def _extract_isrc(track: dict) -> str:
     return track.get("isrc") or None
 
 
-async def shazam_identify(chunks: list[tuple[int, Path]]) -> list[dict]:
+async def shazam_identify(chunks: list[tuple[int, Path]],
+                          on_progress=None) -> list[dict]:
     from shazamio import Shazam
     REFRESH_EVERY = 30  # recreate session every N chunks to avoid aiohttp SSL degradation
     RECOGNIZE_TIMEOUT = 45  # seconds; a chunk is 20s of audio, so this is generous
+    # Persist every N chunks. Results used to be written only after the last
+    # chunk, so a Shazam throttle or a Ctrl-C threw the whole run away — that
+    # cost two runs of a 337-minute set at ~170 chunks each.
+    FLUSH_EVERY = 25
     shazam = Shazam()
     results = []
     for i, (t, path) in enumerate(chunks):
@@ -170,6 +175,11 @@ async def shazam_identify(chunks: list[tuple[int, Path]]) -> list[dict]:
             print(f"  [{t//60:02d}:{t%60:02d}] (no match)")
             results.append({"t": t, "track": None})
         await asyncio.sleep(0.8)  # be polite to unofficial endpoint
+        if on_progress and (i + 1) % FLUSH_EVERY == 0:
+            try:
+                on_progress(results, i + 1)
+            except Exception as e:      # saving must never kill the run
+                print(f"  partial save failed: {e}", file=sys.stderr)
     return results
 
 
@@ -286,15 +296,23 @@ def merge_results(shazam_r: list[dict], acr_r: list[dict]) -> list[dict]:
 
 def upsert_set(db: sqlite3.Connection, video_id: str, dj_slug: str,
                title: str, set_date: str, youtube_url: str,
-               duration_sec: int, tracks: list[dict]):
+               duration_sec: int, tracks: list[dict],
+               chunks_done: int = None, chunks_total: int = None):
+    """Write the set and its tracks. Idempotent — safe to call mid-run.
+
+    `chunks_done`/`chunks_total` mark how far the fingerprinting got, so a run
+    a throttle cut short is visible as partial instead of passing for complete.
+    """
     resolved = sum(1 for t in tracks if t.get("spotify_id"))
     db.execute(
         """INSERT OR REPLACE INTO dj_sets
            (set_id, dj_slug, title, set_date, source_file, track_count,
-            resolved_count, youtube_url, duration_sec)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            resolved_count, youtube_url, duration_sec,
+            chunks_done, chunks_total)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (video_id, dj_slug, title, set_date, youtube_url,
-         len(tracks), resolved, youtube_url, duration_sec),
+         len(tracks), resolved, youtube_url, duration_sec,
+         chunks_done, chunks_total),
     )
     db.execute("DELETE FROM dj_set_tracks WHERE set_id = ?", (video_id,))
     for pos, t in enumerate(tracks, 1):
@@ -354,8 +372,26 @@ def main():
         chunks = chunk_wav(wav, tdir / "chunks", args.chunk, args.step)
         print(f"{len(chunks)} chunks → querying {args.backend}...")
 
+        def _save_partial(partial_results, done):
+            """Persist what has been identified so far.
+
+            upsert_set replaces the set's rows wholesale, so calling it
+            repeatedly is safe and the last call wins. Re-running the same
+            video overwrites completely, which is how a cut-short set resumes.
+            """
+            partial = dedupe(partial_results)
+            for r in partial:
+                r.setdefault("_backend", args.backend)
+            if not partial:
+                return
+            with sqlite3.connect(DB) as pdb:
+                upsert_set(pdb, video_id, args.dj, title, set_date,
+                           args.url, duration, partial, done, len(chunks))
+            print(f"  … saved {len(partial)} tracks ({done}/{len(chunks)} chunks)",
+                  flush=True)
+
         if args.backend == "shazam":
-            results = asyncio.run(shazam_identify(chunks))
+            results = asyncio.run(shazam_identify(chunks, on_progress=_save_partial))
             for r in results:
                 if r.get("track"): r["_backend"] = "shazam"
         elif args.backend == "acrcloud":
@@ -364,7 +400,7 @@ def main():
                 if r.get("track"): r["_backend"] = "acrcloud"
         else:  # merge
             print("  → shazam pass")
-            sh = asyncio.run(shazam_identify(chunks))
+            sh = asyncio.run(shazam_identify(chunks, on_progress=_save_partial))
             print("  → acrcloud pass")
             ac = acr_identify(chunks)
             results = merge_results(sh, ac)
@@ -386,7 +422,7 @@ def main():
 
     with sqlite3.connect(DB) as db:
         upsert_set(db, video_id, args.dj, title, set_date,
-                   args.url, duration, deduped)
+                   args.url, duration, deduped, len(results), len(chunks))
     print(f"→ wrote {len(deduped)} tracks to dj_set_tracks (set_id={video_id})")
     if spotify_count < len(deduped):
         print(f"\nnext: python3 resolve_dj_tracks.py --set {video_id} "
