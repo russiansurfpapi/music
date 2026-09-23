@@ -227,17 +227,32 @@ def cmd_isrc(args) -> None:
 
         for r in rows:
             isrc = r["isrc"]
-            try:
-                resp = sp.search(q=f"isrc:{isrc}", type="track", limit=1)
-                items = (resp.get("tracks") or {}).get("items", [])
-            except SpotifyException as e:
-                if getattr(e, "http_status", None) == 429:
-                    ra = e.headers.get("Retry-After") if getattr(e, "headers", None) else "?"
-                    print(f"\n⛔ 429 after {searched} searches (Retry-After: {ra}s). Saving cache, bailing.")
-                    _save_cache(cache)
-                    return
-                print(f"  err on ISRC {isrc}: {e}")
-                items = []
+            # A long run meets transient network failures. Only 429 is a
+            # reason to stop; a read timeout is a reason to wait and try
+            # again. Letting one propagate killed a resolve mid-run and lost
+            # nothing but wasted the operator's attention.
+            items = []
+            for attempt in range(4):
+                try:
+                    resp = sp.search(q=f"isrc:{isrc}", type="track", limit=1)
+                    items = (resp.get("tracks") or {}).get("items", [])
+                    break
+                except SpotifyException as e:
+                    if getattr(e, "http_status", None) == 429:
+                        ra = e.headers.get("Retry-After") if getattr(e, "headers", None) else "?"
+                        print(f"\n⛔ 429 after {searched} searches (Retry-After: {ra}s). Saving cache, bailing.")
+                        _save_cache(cache)
+                        return
+                    print(f"  err on ISRC {isrc}: {e}")
+                    break
+                except Exception as e:          # timeout, DNS, reset connection
+                    wait = 2 ** attempt
+                    if attempt == 3:
+                        print(f"  giving up on ISRC {isrc} after 4 tries: {e}")
+                        break
+                    print(f"  transient error on {isrc} ({type(e).__name__}); "
+                          f"retrying in {wait}s")
+                    time.sleep(wait)
 
             if items:
                 sid = items[0]["id"]
