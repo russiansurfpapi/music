@@ -66,3 +66,28 @@ Closing it costs one `sp.track(id)` per ID. `.claude/rules/spotify-api.md`
 records that individual `sp.track` calls in bulk are exactly what earned a
 10.8-hour ban, so this wants a paced job with the budget guard, spread over
 days — not a flag on `sync`.
+
+## Closing the gap (`backfill_playlist_tracks.py`, Sept 2026)
+
+```bash
+python3 backfill_playlist_tracks.py --max 300   # Spotify quota, paced
+python3 lastfm_tags.py && python3 classify.py   # free
+```
+
+One `sp.track(id)` per ID, because `sp.tracks([...])` returns 403 in dev mode.
+That is the call pattern `spotify-api.md` blames for a 10.8-hour ban, so
+`--max` defaults to **300, not the backlog**, and every track commits as it
+arrives — a ban costs the next request, not the run. Re-running picks up
+whatever is still missing; there is no state to reset.
+
+First run: 300 fetched, 0 failed, 379/2500 budget, no 429.
+
+| stage | of 300 |
+|---|---|
+| metadata fetched | 300 |
+| got Last.fm tags | 268 |
+| got a classification | 268 |
+| **got a subgenre** | **211** |
+
+So ~70% of a backfilled track becomes usable subgenre data; the rest stop at a
+parent genre or have no tags at all. 913 left — a few more days of runs.
