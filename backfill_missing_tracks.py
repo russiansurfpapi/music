@@ -45,7 +45,7 @@ def find_missing(conn):
           AND t.spotify_id IS NULL
           AND d.raw_artist IS NOT NULL AND TRIM(d.raw_artist) != ''
           AND d.raw_title  IS NOT NULL AND TRIM(d.raw_title)  != ''
-        GROUP BY d.spotify_id, artist, title
+        GROUP BY d.spotify_id, 2, 3   -- by position: `artist` alone is ambiguous with tracks.artist
         ORDER BY d.spotify_id, n DESC
     """).fetchall()
 

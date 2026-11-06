@@ -172,9 +172,12 @@ def cmd_search(args) -> None:
                     "WHERE raw_artist=? AND raw_title=? AND spotify_id IS NULL",
                     (sid, r["raw_artist"], r["raw_title"]),
                 )
+                # Commit now: the next `cache[key] = ...` writes on its own
+                # connection, and an uncommitted UPDATE here self-deadlocks it
+                # ("database is locked"). Same trap as cmd_isrc.
+                conn.commit()
             searched += 1
             if searched % 10 == 0:
-                conn.commit()
                 _save_cache(cache)
                 print(f"  [{searched}/{len(rows)}] found {found} so far")
             time.sleep(TRACK_DELAY)
