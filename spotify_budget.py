@@ -74,26 +74,37 @@ def _now():
 _pending = 0
 _baseline = None
 _FLUSH_EVERY = 25
+_next_flush_at = _FLUSH_EVERY
+
+# A flush that races a caller's open write transaction must give up fast.
+# With the default 30s busy timeout, every request after a failed flush waited
+# the full 30s (the pending count never dropped below _FLUSH_EVERY), which
+# turned a 7-minute library pull into a 2.5-hour one.
+_FLUSH_BUSY_MS = 200
 
 
 def _flush():
     """Persist the in-memory count. Never raises — accounting must not be able
-    to break the work it is accounting for. A locked DB just defers the flush.
+    to break the work it is accounting for. A locked DB just defers the flush
+    to the next _FLUSH_EVERY requests (or to exit).
     """
-    global _pending
+    global _pending, _next_flush_at
     if not _pending:
         return
     n = _pending
     try:
         with connect() as conn:
+            conn.execute(f"PRAGMA busy_timeout = {_FLUSH_BUSY_MS}")
             conn.execute(
                 "INSERT INTO spotify_api_usage (day, requests) VALUES (?,?) "
                 "ON CONFLICT(day) DO UPDATE SET requests = requests + ?",
                 (_today(), n, n))
             conn.commit()
     except sqlite3.OperationalError:
-        return  # caller holds a write txn; keep counting, retry next flush
+        _next_flush_at = _pending + _FLUSH_EVERY  # caller holds a write txn; retry later
+        return
     _pending -= n
+    _next_flush_at = _FLUSH_EVERY
 
 
 atexit.register(_flush)
@@ -141,7 +152,7 @@ def charge(n=1):
             f"without losing work.")
 
     _pending += n
-    if _pending >= _FLUSH_EVERY:
+    if _pending >= _next_flush_at:
         _flush()
     return used + n
 
