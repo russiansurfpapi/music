@@ -155,7 +155,12 @@ def stage_identify(slug, rows, run_dir, args):
                     log("identify: YouTube pushing back — pausing downloads 5 min")
                     pause_until[0] = time.time() + 300
 
-    log(f"identify: {len(queue)} sets, {args.workers} at a time")
+    # Lookups in flight = workers x ACR_THREADS. The trial plan refuses with 3015 ("qps limit
+    # exceeded") above a few per second: 4 sets x the default 8 threads was refused on sight
+    # (2026-11-09); Saturday's 4 x 2 ran clean. Keep the product near 8.
+    os.environ.setdefault("ACR_THREADS", str(args.acr_threads))
+    log(f"identify: {len(queue)} sets, {args.workers} at a time, "
+        f"{os.environ['ACR_THREADS']} lookups each")
     for attempt in range(3):
         with ThreadPoolExecutor(args.workers) as ex:
             list(ex.map(work, queue))
@@ -263,6 +268,7 @@ def main():
     ap.add_argument("--min-minutes", type=int, default=30)
     ap.add_argument("--step", type=int, default=60, help="seconds between fingerprint lookups")
     ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--acr-threads", type=int, default=2, help="ACRCloud lookups in flight per set")
     ap.add_argument("--yes", action="store_true", help="don't ask before spending ACRCloud lookups")
     args = ap.parse_args()
 

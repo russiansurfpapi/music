@@ -129,3 +129,4 @@ Spotify cooldown or a spent day and says the command to resume.
 - The title cleaner (`_base_title`, `_queries`, `_fix_text` in resolve_dj_tracks.py) is pinned by
   `tests/test_title_cleaner.py` (5; 2 planted defects caught). `_fix_text` repairs both Latin-1 ("Ã¡") and
   Windows-1252 ("Ã‰") garbling.
+- **Lookups in flight = sets at once × `ACR_THREADS`.** identify_youtube_set.py defaults to 8 per set, and 4 × 8 was refused on sight (3015 "qps limit exceeded"); the pipeline sets 2 per set (`--acr-threads`), which runs clean.
