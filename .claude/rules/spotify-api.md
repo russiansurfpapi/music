@@ -75,3 +75,14 @@
 - `sp.playlist_tracks(id)` is the reliable way to verify track counts
 - `sp.search(q='artist:X', type='track')` remains the working substitute for `artist_top_tracks` (403)
 - `sp.artist_albums()` works, `sp.album_tracks()` works, `sp.album()` works individually — sampler pattern is viable
+
+## The DJ-set lookup cleans titles now; pace and the learned limit (2026-11-09)
+- `resolve_dj_tracks._search_track` tries the title as written, then the BASE song by the lead artist: remix/edit/mix/
+  sped-up/feat tags stripped (bracket, " - X Remix" and bare trailing "Remix" forms), UTF-8-read-as-Latin-1 accents repaired
+  ("MÃ¡gica" -> "Mágica"). A query whose hits don't match falls through to the next one (it used to return None).
+  Before this the DJ lookup used none of `artist_normalize.clean_title`. `search --retry-misses` re-tries cached misses
+  once each (`.retried_misses.txt`). Live hit rate not measured yet.
+- **1.5 s per track (`SPOTIFY_TRACK_DELAY`) earned an 11-hour ban after 783 requests in a day** (11-09 16:21). The budget
+  module learned 626/day. Keep the default 5 s; never speed up a search to save time.
+- A runner that greps a script's output for "429"/"Budget" fires on normal text (`.runs/five-djs/after.py` slept 6 h twice
+  after good rounds). Ask `spotify_api_usage` (`cooldown_until`, `requests`) instead.

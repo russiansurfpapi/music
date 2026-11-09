@@ -207,3 +207,4 @@
 ## Backups
 - `library.db.bak` — pre-classification-overhaul (2026-04-20)
 - `library.db.bak-2026-04-22` — post-session snapshot
+- `dj_sets_playlist.py` — artist name -> every YouTube DJ set fingerprinted -> one "<Artist> — All Sets" Spotify playlist; see audio-fingerprinting.md

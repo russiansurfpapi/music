@@ -21,7 +21,7 @@ from auth import get_spotify
 from db import connect
 from tracklist_scraper import _is_same_track
 
-TRACK_DELAY = 5.0  # extra-conservative; user has hit bans recently
+TRACK_DELAY = float(os.environ.get("SPOTIFY_TRACK_DELAY", "5.0"))  # extra-conservative default; user has hit bans
 
 
 def _cache_key(artist: str, title: str) -> str:
@@ -103,34 +103,96 @@ def cmd_cache(args) -> None:
         print(f"  total newly resolved: {hit + uri_hit}")
 
 
+import re as _re
+from artist_normalize import clean_title as _clean_title, primary_artist as _primary_artist
+
+# A title tag that names a version of a song rather than the song itself.
+_VERSION_WORDS = (r"remix|mix|edit|version|bootleg|rework|remaster(?:ed)?|extended|original|radio|club|vip|"
+                  r"instrumental|acapella|dub|sped up|slowed|reverb|flip|refix|re-edit|blend")
+_DASH_TAG = _re.compile(rf"(?i)\s+[-–—]\s+[^-–—]*\b(?:{_VERSION_WORDS})\b[^-–—]*$")
+_PAREN_TAG = _re.compile(rf"(?i)\s*[\(\[][^)\]]*\b(?:{_VERSION_WORDS}|feat\.?|ft\.?|featuring|with)\b[^)\]]*[\)\]]")
+
+
+def _fix_text(s):
+    """Undo UTF-8 read as Latin-1 ("Fiesta MÃ¡gica" -> "Fiesta Mágica")."""
+    s = s or ""
+    if "Ã" in s or "Â" in s:
+        # Latin-1 covers "Ã¡"; Windows-1252 covers "Ã‰" (É), whose second byte Latin-1 can't encode.
+        for enc in ("latin-1", "cp1252"):
+            try:
+                return s.encode(enc).decode("utf-8")
+            except (UnicodeEncodeError, UnicodeDecodeError):
+                pass
+    return s
+
+
+def _base_title(title):
+    """The song name with remix/edit/feat tags removed; the raw title if nothing is left."""
+    t = _fix_text(title)
+    for _ in range(3):
+        t2 = _PAREN_TAG.sub("", _DASH_TAG.sub("", t)).strip(" -–—")
+        if t2 == t:
+            break
+        t = t2
+    t = _clean_title(t) or t
+    t = _re.sub(r"(?i)\s+(?:remix|re-edit|edit|bootleg|rework|vip)$", "", t) or t
+    return t.strip() or _fix_text(title).strip()
+
+
+def _queries(artist, title):
+    """Most faithful first: as written, then the base song by the lead artist."""
+    a, t = _fix_text(artist), _fix_text(title)
+    pa, bt = _primary_artist(a) or a, _base_title(title)
+    out = [f"track:{t} artist:{a}", f"track:{bt} artist:{pa}", f"{pa} {bt}"]
+    seen, uniq = set(), []
+    for q in out:
+        if q.lower() not in seen:
+            seen.add(q.lower()); uniq.append(q)
+    return uniq, a, t, bt
+
+
 def _search_track(sp, artist: str, title: str):
-    """Return spotify_id or None. Raise on 429 — let caller bail."""
-    queries = [
-        f"track:{title} artist:{artist}",
-        f"{artist} {title}",
-    ]
+    """Return spotify_id or None. Raise on 429 — let caller bail.
+
+    Tries the title as written, then the base song by the lead artist (remix/edit/feat
+    tags stripped, broken accents repaired). A query whose hits do not match falls
+    through to the next one instead of ending the search.
+    """
+    queries, a, t, bt = _queries(artist, title)
+    lead = (_primary_artist(a) or a).lower()
     for q in queries:
         resp = sp.search(q=q, type="track", limit=3)
         items = (resp.get("tracks") or {}).get("items", [])
-        if items:
-            # Prefer artist-name overlap.
-            a = artist.lower().split(",")[0].strip()
-            for it in items:
-                names = " ".join(x["name"].lower() for x in it.get("artists", []))
-                if a and a in names:
-                    return it["id"]
-            # No artist overlap: fall back to the shared verifier rather than
-            # items[0]. Returning the top hit regardless is how a High Contrast
-            # jungle mix became Kid Cudi's "Maui Wowie" — and this writes to
-            # both spotify_id_cache and dj_set_tracks.
-            for it in items:
-                if _is_same_track(artist, title, it):
-                    return it["id"]
-            return None
+        for it in items:
+            names = " ".join(x["name"].lower() for x in it.get("artists", []))
+            if lead and lead in names:
+                return it["id"]
+        # No artist overlap: the shared verifier, never items[0] blind (the
+        # High Contrast -> "Maui Wowie" lesson). Accept a match on either title.
+        for it in items:
+            if _is_same_track(a, t, it) or _is_same_track(a, bt, it):
+                return it["id"]
     return None
 
 
+def _set_scope(args):
+    """SQL clause + params limiting a run to the sets named by --sets (ids, comma-separated,
+    or a path to a JSON list of {"id": ...} rows as discover_dj_sets.py --json writes).
+    Absent = every set, as before."""
+    spec = getattr(args, "sets", None)
+    if not spec:
+        return "", []
+    if os.path.exists(spec):
+        ids = [r["id"] if isinstance(r, dict) else r for r in json.load(open(spec))]
+    else:
+        ids = [x.strip() for x in spec.split(",") if x.strip()]
+    if not ids:
+        raise SystemExit("--sets named no set ids")
+    return f" AND set_id IN ({','.join('?' * len(ids))})", ids
+
+
 def cmd_search(args) -> None:
+    scope_sql, scope_params = _set_scope(args)
     cache = _load_cache()
     sp = get_spotify()
     me = sp.current_user()
@@ -141,19 +203,27 @@ def cmd_search(args) -> None:
             "SELECT DISTINCT raw_artist, raw_title FROM dj_set_tracks "
             "WHERE spotify_id IS NULL AND raw_artist != 'spotify_uri' "
             "AND length(raw_artist) > 1 AND length(raw_title) > 1 "
-            "AND LOWER(raw_artist) NOT IN ('id', 'i.d.', 'unknown', '?')"
+            "AND LOWER(raw_artist) NOT IN ('id', 'i.d.', 'unknown', '?')" + scope_sql,
+            scope_params,
         ).fetchall()
+        retry = getattr(args, "retry_misses", False)
+        # Tracks already retried with the cleaned queries are not retried again.
+        retried_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".retried_misses.txt")
+        retried = set(open(retried_path).read().splitlines()) if (retry and os.path.exists(retried_path)) else set()
+        rows = [r for r in rows if _cache_key(r["raw_artist"], r["raw_title"]) not in retried]
+        rows = [r for r in rows
+                if (cache.get(_cache_key(r["raw_artist"], r["raw_title"])) is None if retry
+                    else _cache_key(r["raw_artist"], r["raw_title"]) not in cache
+                    and _cache_key(r["raw_artist"], r["raw_title"]) not in getattr(cache, "misses", ()))]
         if args.max:
             rows = rows[:args.max]
-        print(f"Will search {len(rows)} unique (artist, title) pairs")
+        print(f"Will search {len(rows)} unique (artist, title) pairs" + (" (retrying cached misses)" if retry else ""))
         print(f"Pacing: {TRACK_DELAY}s between calls. Will BAIL instantly on 429.")
 
         searched = 0
         found = 0
         for r in rows:
             key = _cache_key(r["raw_artist"], r["raw_title"])
-            if key in cache:
-                continue
             try:
                 sid = _search_track(sp, r["raw_artist"], r["raw_title"])
             except SpotifyException as e:
@@ -165,6 +235,9 @@ def cmd_search(args) -> None:
                 print(f"  err on {r['raw_artist']} - {r['raw_title']}: {e}")
                 sid = None
             cache[key] = sid
+            if retry:
+                with open(retried_path, "a") as fh:
+                    fh.write(key + "\n")
             if sid:
                 found += 1
                 conn.execute(
@@ -199,6 +272,7 @@ def cmd_search(args) -> None:
 def cmd_isrc(args) -> None:
     """Resolve unmatched tracks that have an ISRC via Spotify isrc: search.
     Near-100% hit rate, 1 API call per track."""
+    scope_sql, scope_params = _set_scope(args)
     sp = get_spotify()
     cache = _load_cache()
     me = sp.current_user()
@@ -207,7 +281,8 @@ def cmd_isrc(args) -> None:
     with connect() as conn:
         rows = conn.execute(
             "SELECT DISTINCT isrc, raw_artist, raw_title FROM dj_set_tracks "
-            "WHERE spotify_id IS NULL AND isrc IS NOT NULL AND length(isrc) > 3"
+            "WHERE spotify_id IS NULL AND isrc IS NOT NULL AND length(isrc) > 3" + scope_sql,
+            scope_params,
         ).fetchall()
         if args.max:
             rows = rows[:args.max]
@@ -292,8 +367,12 @@ def main() -> None:
     sub.add_parser("cache")
     s = sub.add_parser("search")
     s.add_argument("--max", type=int, default=0, help="Cap searches per run (default: all)")
+    s.add_argument("--retry-misses", action="store_true", help="Search again tracks an earlier run could not find")
     i = sub.add_parser("isrc")
     i.add_argument("--max", type=int, default=0, help="Cap searches per run (default: all)")
+    for p_ in (s, i):
+        p_.add_argument("--sets", default=None,
+                        help="Only these sets: comma-separated ids, or a discover_dj_sets.py --json file")
     args = ap.parse_args()
     if args.cmd == "cache":
         cmd_cache(args)

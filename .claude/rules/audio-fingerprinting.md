@@ -115,3 +115,17 @@ A 20x spread. Filter on this before spending an hour, and treat anything billed
 throttle or a kill loses the whole run. That has cost two partial runs of a
 337-minute set (~170 chunks each time). **Incremental writes are the fix and
 are not done yet.**
+
+## One artist -> one "All Sets" playlist: `dj_sets_playlist.py` (2026-11-09)
+`python3 dj_sets_playlist.py "<Artist>"` = find (discover_dj_sets.py -> `.runs/<slug>/sets.json`) -> identify
+(ACRCloud, 4 sets at a time) -> match (resolve_dj_tracks.py cache / isrc / search with `--sets`, so only this
+artist's tracks spend Spotify budget) -> playlist "<Artist> — All Sets" (set order, each song once). Every stage
+resumes; `--plan` stops before paying, `--from match` / `--only playlist` rerun one stage. It stops cleanly on a
+Spotify cooldown or a spent day and says the command to resume.
+- **A set counts as finished at 80% of chunks answered** (`FINISHED_SHARE`). ACRCloud refuses a few lookups on most
+  sets (Saturday: 47 of 48 at >= 90%, lowest 83%) and a rerun re-fingerprints the WHOLE set, so a 100% test would
+  re-pay ~90 lookups per set. `run_acr.py`'s strict test was never re-applied, which is why it did not show.
+- Cost: one ACRCloud lookup per 60 s of audio. Floating Points = 16 sets, ~2,200 lookups — most of the 3,000 trial.
+- The title cleaner (`_base_title`, `_queries`, `_fix_text` in resolve_dj_tracks.py) is pinned by
+  `tests/test_title_cleaner.py` (5; 2 planted defects caught). `_fix_text` repairs both Latin-1 ("Ã¡") and
+  Windows-1252 ("Ã‰") garbling.
