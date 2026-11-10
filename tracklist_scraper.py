@@ -850,7 +850,12 @@ def _get_or_create_playlist(sp, playlist_name):
     # A miss against the DB mirror is not proof the playlist is absent — it may
     # just be stale. Confirm live once before creating a duplicate.
     if "__live__" not in _PLAYLIST_INDEX:
-        _PLAYLIST_INDEX = _build_playlist_index(sp)
+        # Merge, never replace: Spotify's own listing can lag behind playlists made
+        # the day before, and replacing the DB index with it made 10 duplicates on
+        # 2026-11-10 (yesterday's set playlists looked absent after the rescan).
+        live = _build_playlist_index(sp)
+        live.update(_PLAYLIST_INDEX)
+        _PLAYLIST_INDEX = live
         _PLAYLIST_INDEX["__live__"] = ("", "")
         hit = _PLAYLIST_INDEX.get(key)
         if hit:
