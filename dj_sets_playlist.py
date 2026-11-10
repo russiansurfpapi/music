@@ -12,7 +12,8 @@ Stages, each safe to rerun:
   2. identify identify_youtube_set.py --backend acrcloud, 4 sets at a time; finished sets skipped
   3. match   resolve_dj_tracks.py cache / isrc / search, scoped to this artist's sets with --sets.
              Stops on a Spotify cooldown or a spent daily budget; rerun later to continue.
-  4. playlist "<Artist> — All Sets", sets in list order, songs in set order, each song once.
+  4. playlist one playlist per set (named after the set, sets with >= 3 matched songs), then
+             "<Artist> — All Sets": every set merged, sets in list order, songs in set order, each song once.
 
 Usage:
   python3 dj_sets_playlist.py "Benji B"                 # everything
@@ -40,6 +41,7 @@ DB = os.path.join(MUSIC, "library.db")
 STAGES = ["find", "identify", "match", "playlist"]
 REAL_ID = re.compile(r"^[A-Za-z0-9]{22}$")
 NOT_A_TRACK = ("id", "i.d.", "unknown", "?")
+MIN_SET_SONGS = 3  # fewer matched songs than this: no playlist of its own (still in All Sets)
 
 
 def log(*a):
@@ -239,6 +241,26 @@ def stage_playlist(artist, rows):
     if not tracks:
         raise SystemExit(f"playlist: no songs matched on Spotify yet for {artist}")
     sp = get_spotify()
+    # One playlist per set first (named after the set), then the per-DJ merge below.
+    # Sets with fewer than MIN_SET_SONGS matched songs get no playlist of their own.
+    from build_set_playlist import default_name
+    made = 0
+    with db() as c:
+        for r in rows:
+            got = list(dict.fromkeys(x for (x,) in c.execute(
+                "select spotify_id from dj_set_tracks where set_id=? order by position", (r["id"],))
+                if x and REAL_ID.match(x)))
+            if len(got) < MIN_SET_SONGS:
+                continue
+            title = (c.execute("select title from dj_sets where set_id=?", (r["id"],)).fetchone()
+                     or [r.get("title")])[0]
+            set_name = default_name(title or "", slugify(artist))
+            spid, surl = _get_or_create_playlist(sp, set_name)
+            n = _add_tracks_to_playlist(sp, spid, got)
+            made += 1
+            log(f"playlist: {set_name} — {len(got)} songs ({n} new)\n   {surl}")
+            time.sleep(5)
+    log(f"playlist: {made} set playlists, now the per-DJ merge")
     pid, url = _get_or_create_playlist(sp, name)
     added = _add_tracks_to_playlist(sp, pid, tracks)
     log(f"playlist: {name} — {len(tracks)} songs from {used_sets} of {len(rows)} sets "

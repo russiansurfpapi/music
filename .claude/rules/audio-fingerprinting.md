@@ -130,3 +130,5 @@ Spotify cooldown or a spent day and says the command to resume.
   `tests/test_title_cleaner.py` (5; 2 planted defects caught). `_fix_text` repairs both Latin-1 ("Ã¡") and
   Windows-1252 ("Ã‰") garbling.
 - **Lookups in flight = sets at once × `ACR_THREADS`.** identify_youtube_set.py defaults to 8 per set, and 4 × 8 was refused on sight (3015 "qps limit exceeded"); the pipeline sets 2 per set (`--acr-threads`), which runs clean.
+- **Both playlists, always (2026-11-10):** the playlist stage makes one playlist per set (>= `MIN_SET_SONGS` = 3 matched)
+  and then the "<Artist> — All Sets" merge. Skill: `.claude/skills/dj-sets-to-playlists`. Run with `/usr/bin/python3`.
